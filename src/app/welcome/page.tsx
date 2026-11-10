@@ -114,7 +114,16 @@ function Welcome() {
         )}
 
         <Button type="submit" className="w-full text-lg">{editing ? "Save profile" : "Continue →"}</Button>
-        {!editing && <p className="text-center text-xs text-muted">You can change this anytime in Me.</p>}
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => { store.startGuest(); router.push(store.onboarded ? "/feed" : "/onboarding"); }}
+            className="w-full rounded-2xl border-2 border-line py-3 font-display font-semibold text-muted hover:border-violet hover:text-violet"
+          >
+            Browse as guest
+          </button>
+        )}
+        {!editing && <p className="text-center text-xs text-muted">Guests can search and try apps. To post requests, upvote or publish, you&apos;ll need a profile.</p>}
       </form>
     </main>
   );

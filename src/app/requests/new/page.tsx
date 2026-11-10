@@ -6,6 +6,7 @@ import { Suspense, useState } from "react";
 import { type NicheSlug } from "@/lib/data";
 import { searchApps } from "@/lib/match";
 import { useStore } from "@/lib/store";
+import { GuestWall } from "@/components/AccountPrompt";
 import { Button, Chip, CloseButton } from "@/components/ui";
 
 const WHO: { slug: NicheSlug; label: string }[] = [
@@ -17,7 +18,7 @@ const WHO: { slug: NicheSlug; label: string }[] = [
 function PostRequest() {
   const params = useSearchParams();
   const router = useRouter();
-  const { apps, postRequest, showToast } = useStore();
+  const { apps, postRequest, showToast, profile, ready } = useStore();
   const [title, setTitle] = useState(params.get("title") ?? "");
   const [desc, setDesc] = useState("");
   const [who, setWho] = useState<NicheSlug[]>(["student"]);
@@ -32,6 +33,15 @@ function PostRequest() {
     showToast("Request posted! You'll be notified when it's built 🎉");
     router.push("/requests?tab=new");
   };
+
+  if (ready && !profile.complete) {
+    return (
+      <main className="px-5 pb-10">
+        <header className="flex h-14 items-center"><h1 className="flex-1 font-display text-lg font-bold">Post a request</h1><CloseButton /></header>
+        <GuestWall reason="post a request" />
+      </main>
+    );
+  }
 
   return (
     <main className="px-5 pb-10">

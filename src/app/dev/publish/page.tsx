@@ -7,6 +7,7 @@ import { Suspense, useEffect, useState } from "react";
 import { handleFor, type App, type PricingType } from "@/lib/data";
 import { slugify } from "@/lib/match";
 import { useStore } from "@/lib/store";
+import { GuestWall } from "@/components/AccountPrompt";
 import { Button, TopBar } from "@/components/ui";
 
 const REPOS = [
@@ -32,7 +33,7 @@ function Step({ n, title, done, children }: { n: number; title: string; done?: b
 function Publish() {
   const params = useSearchParams();
   const router = useRouter();
-  const { requests, startBuilding, publishApp, showToast, profile } = useStore();
+  const { requests, startBuilding, publishApp, showToast, profile, ready } = useStore();
   const handle = handleFor(profile);
   const openReqs = requests.filter((r) => r.status !== "live");
   const [reqId, setReqId] = useState(params.get("request") ?? "r-attendance");
@@ -82,6 +83,15 @@ function Publish() {
       router.push("/notifications");
     }, 900);
   };
+
+  if (ready && !profile.complete) {
+    return (
+      <main className="pb-10">
+        <TopBar title="Publish your app" />
+        <div className="px-5"><GuestWall reason="publish apps" /></div>
+      </main>
+    );
+  }
 
   return (
     <main className="pb-10">

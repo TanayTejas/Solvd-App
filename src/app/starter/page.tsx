@@ -17,12 +17,13 @@ function draftFor(problem: string) {
 
 function Starter() {
   const q = useSearchParams().get("q") || "turn my timetable photo into calendar events";
-  const { postRequest, requests, showToast } = useStore();
+  const { postRequest, requests, showToast, profile } = useStore();
   const [opened, setOpened] = useState(false);
   const d = draftFor(q);
   const alreadyPosted = requests.some((r) => r.title.toLowerCase() === q.toLowerCase());
 
   const useIt = () => {
+    if (!profile.complete) { setOpened(true); showToast("AI draft opened (guest mode)"); return; }
     if (!alreadyPosted) postRequest({ title: q, description: "Posted automatically from an AI starter app.", niches: ["student"], bountyInr: 0 });
     setOpened(true);
     showToast("AI draft opened · your request is on the board too");
@@ -58,7 +59,7 @@ function Starter() {
           Request a developer to polish it
         </Link>
       </div>
-      <p className="mt-4 px-5 text-center text-xs text-muted">ℹ️ Your request is also posted to the <Link href="/requests?tab=new" className="font-semibold text-violet">Requests board</Link> so others can upvote it.</p>
+      <p className={`mt-4 px-5 text-center text-xs text-muted ${profile.complete ? "" : "hidden"}`}>ℹ️ Your request is also posted to the <Link href="/requests?tab=new" className="font-semibold text-violet">Requests board</Link> so others can upvote it.</p>
     </main>
   );
 }

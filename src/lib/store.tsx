@@ -16,6 +16,7 @@ import {
 
 type State = {
   profile: Profile;
+  guest: boolean; // browsing without a profile: can search and look, not post or publish
   account: { email: string; name: string } | null; // signed-in Google account
   authEnabled: boolean; // Google sign-in is set up on the server
   onboarded: boolean;
@@ -31,6 +32,7 @@ type State = {
 
 const INITIAL: State = {
   profile: EMPTY_PROFILE,
+  guest: false,
   account: null,
   authEnabled: false,
   onboarded: false,
@@ -55,6 +57,11 @@ type Store = State & {
   toast: string | null;
   showToast: (msg: string) => void;
   saveProfile: (p: Omit<Profile, "complete">) => void;
+  startGuest: () => void;
+  /** True if the person has a profile; otherwise shows the "create a profile" prompt. */
+  requireAccount: (reason: string) => boolean;
+  accountPrompt: string | null;
+  closeAccountPrompt: () => void;
   signInWithGoogle: () => void;
   signOutOfGoogle: () => Promise<void>;
   setNiches: (n: NicheSlug[]) => void;
@@ -79,6 +86,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [mode, setMode] = useState<"local" | "shared">("local");
+  const [accountPrompt, setAccountPrompt] = useState<string | null>(null);
   const [uid, setUid] = useState("");
 
   // Load shared data from the database (if the server has one).
@@ -169,8 +177,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     notifications: [{ ...n, id: `n-${Date.now()}`, read: false, createdAt: Date.now() }, ...s.notifications],
   });
 
+  // Guests can browse and search; anything that writes needs a profile.
+  const allowed = (reason: string) => {
+    if (state.profile.complete) return true;
+    setAccountPrompt(reason);
+    return false;
+  };
+
   const store = useMemo<Store>(() => ({
     ...state,
+    accountPrompt,
+    closeAccountPrompt: () => setAccountPrompt(null),
+    requireAccount: allowed,
+    startGuest: () => setState((s) => ({ ...s, guest: true })),
     ready,
     mode,
     toast,
@@ -190,12 +209,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     },
     saveProfile: (p) => {
       const profile: Profile = { ...p, name: p.name.trim(), complete: true };
-      setState((s) => ({ ...s, profile }));
+      setState((s) => ({ ...s, profile, guest: false }));
       send({ type: "saveProfile", profile });
     },
     setNiches: (niches) => { setState((s) => ({ ...s, niches })); send({ type: "setNiches", niches }); },
     finishOnboarding: (niches) => { setState((s) => ({ ...s, niches, onboarded: true })); send({ type: "setNiches", niches }); },
     toggleUpvote: (id) => {
+      if (!allowed("upvote requests")) return;
       send({ type: "toggleUpvote", requestId: id });
       setState((s) => {
         const on = s.upvoted.includes(id);
@@ -212,6 +232,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         favourites: s.favourites.includes(slug) ? s.favourites.filter((x) => x !== slug) : [...s.favourites, slug],
       })),
     postRequest: (r) => {
+      if (!allowed("post a request")) return "";
       const id = `r-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
       send({ type: "postRequest", id, ...r });
       setState((s) => ({
@@ -238,6 +259,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return left;
     },
     keepApp: (slug) => {
+      if (!allowed("keep apps")) return;
       send({ type: "keepApp", slug });
       setState((s) => ({
         ...s,
@@ -248,6 +270,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     },
     removeApp: (slug) => { send({ type: "removeApp", slug }); setState((s) => ({ ...s, myApps: s.myApps.filter((m) => m.slug !== slug) })); },
     sendFeedback: (slug, solved, reasons) => {
+      if (!state.profile.complete) return; // guests' feedback isn't saved
       send({ type: "sendFeedback", slug, solved, reasons });
       setState((s) => ({ ...s, feedback: [...s.feedback, { slug, solved, reasons }] }));
     },
@@ -259,6 +282,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }));
     },
     startBuilding: (requestId) => {
+      if (!allowed("build apps")) return;
       send({ type: "startBuilding", requestId });
       setState((s) => ({
         ...s,
@@ -268,6 +292,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }));
     },
     publishApp: ({ requestId, app }) => {
+      if (!allowed("publish apps")) return;
       // After saving, reload so the new notification comes from the database.
       send({ type: "publishApp", requestId, app }).then(() => { if (mode === "shared") refresh(uid); });
       setState((s) => {
@@ -301,7 +326,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setState(INITIAL);
       refresh(id);
     },
-  }), [state, ready, mode, toast, showToast, send, refresh, uid]);
+  }), [state, ready, mode, toast, showToast, send, refresh, uid, accountPrompt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }

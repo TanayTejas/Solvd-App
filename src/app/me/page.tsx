@@ -6,9 +6,10 @@ import { nicheBySlug } from "@/lib/data";
 import { priceLabel } from "@/lib/match";
 import { useStore } from "@/lib/store";
 import { AppIcon, Avatar, GoogleButton, Pill, TabBar } from "@/components/ui";
+import { GuestWall } from "@/components/AccountPrompt";
 
 export default function Me() {
-  const { niches, myApps, apps, requests, reset, showToast, profile, account, authEnabled, signInWithGoogle, signOutOfGoogle } = useStore();
+  const { niches, myApps, apps, requests, reset, showToast, profile, account, authEnabled, signInWithGoogle, signOutOfGoogle, ready } = useStore();
   const router = useRouter();
   const mine = myApps.map((m) => ({ m, app: apps.find((a) => a.slug === m.slug)! })).filter((x) => x.app);
   const monthly = mine.filter((x) => x.m.state === "kept" && x.app.pricingType === "monthly").reduce((s, x) => s + x.app.priceInr, 0)
@@ -24,6 +25,21 @@ export default function Me() {
       ? ["↪", "Sign out", async () => { await signOutOfGoogle(); showToast("Signed out"); router.push("/welcome"); }]
       : ["↺", "Start over as a new user", () => { reset(); showToast("Starting fresh"); router.push("/welcome"); }],
   ];
+
+  if (ready && !profile.complete) {
+    return (
+      <main>
+        <section className="flex flex-col items-center bg-violet-tint px-5 pb-6 pt-8">
+          <Avatar name="?" className="h-20 w-20 text-3xl ring-4 ring-white" />
+          <h1 className="mt-3 text-2xl font-bold">Guest</h1>
+          <p className="text-sm text-muted">Browsing without a profile</p>
+          <Link href="/onboarding?edit=1" className="mt-2 text-sm font-semibold text-violet">Edit niches</Link>
+        </section>
+        <div className="px-5 pt-5"><GuestWall reason="post requests, upvote, keep apps and publish" /></div>
+        <TabBar />
+      </main>
+    );
+  }
 
   return (
     <main>

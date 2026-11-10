@@ -4,6 +4,7 @@ import "./globals.css";
 import { StoreProvider } from "@/lib/store";
 import Toast from "@/components/Toast";
 import ProfileGate from "@/components/ProfileGate";
+import AccountPrompt from "@/components/AccountPrompt";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const poppins = Poppins({ variable: "--font-poppins", subsets: ["latin"], weight: ["500", "600", "700", "800"] });
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
             <Toast />
             <ProfileGate />
+            <AccountPrompt />
           </div>
         </StoreProvider>
       </body>

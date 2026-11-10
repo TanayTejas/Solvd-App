@@ -4,11 +4,12 @@ import Link from "next/link";
 import { DEVELOPER, nicheBySlug } from "@/lib/data";
 import { compactNumber } from "@/lib/match";
 import { useStore } from "@/lib/store";
+import { GuestWall } from "@/components/AccountPrompt";
 import { Avatar, Logo, VerifiedBadge } from "@/components/ui";
 
 
 export default function DevHub() {
-  const { requests, feedback, apps, profile } = useStore();
+  const { requests, feedback, apps, profile, ready } = useStore();
   const skills = profile.skills.length ? profile.skills : DEVELOPER.skills;
   // Requests that match this developer's skills: open or being built, most votes first.
   const matching = requests.filter((r) => r.status !== "live").sort((a, b) => b.upvotes - a.upvotes).slice(0, 3);
@@ -19,6 +20,15 @@ export default function DevHub() {
   const rating = sample ? 4.5 : myApps.reduce((n, a) => n + a.rating, 0) / myApps.length;
   const earned = sample ? "₹2.1k" : `₹${myApps.reduce((n, a) => n + a.priceInr * Math.round(a.usersCount * 0.3), 0)}`;
   const weekly = [0.26, 0.53, 1].map((f, i) => ({ w: `W${i + 1}`, v: Math.round(users * f) }));
+
+  if (ready && !profile.complete) {
+    return (
+      <main className="px-5 pb-10 pt-6">
+        <h1 className="mb-4 font-display text-xl font-bold">Developer hub</h1>
+        <GuestWall reason="build and publish apps" />
+      </main>
+    );
+  }
 
   return (
     <main className="pb-10">

@@ -38,6 +38,7 @@ export default function RunApp() {
   const trialOver = left === -1;
 
   const keep = () => {
+    if (!store.requireAccount("keep apps")) return;
     store.keepApp(app.slug);
     store.sendFeedback(app.slug, true, []);
     store.showToast(app.priceInr ? `Kept! ${priceLabel(app)} added to your one monthly bill (mock payment)` : `${app.name} added to My apps`);

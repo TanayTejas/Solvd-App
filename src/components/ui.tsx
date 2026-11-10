@@ -125,8 +125,8 @@ export function Avatar({ name, className = "h-9 w-9 text-sm" }: { name: string; 
 }
 
 export function BellButton() {
-  const { notifications } = useStore();
-  const unread = notifications.filter((n) => !n.read).length;
+  const { notifications, profile } = useStore();
+  const unread = profile.complete ? notifications.filter((n) => !n.read).length : 0;
   return (
     <Link href="/notifications" aria-label="Notifications" className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-black/5">
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 003.4 0" /></svg>

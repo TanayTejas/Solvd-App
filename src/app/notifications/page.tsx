@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useStore } from "@/lib/store";
 import { TopBar } from "@/components/ui";
+import { GuestWall } from "@/components/AccountPrompt";
 
 function ago(ts: number) {
   const m = Math.max(1, Math.round((Date.now() - ts) / 60000));
@@ -12,9 +13,18 @@ function ago(ts: number) {
 }
 
 export default function Notifications() {
-  const { notifications, markRead } = useStore();
+  const { notifications, markRead, profile, ready } = useStore();
   const fresh = notifications.filter((n) => !n.read);
   const earlier = notifications.filter((n) => n.read);
+
+  if (ready && !profile.complete) {
+    return (
+      <main className="pb-10">
+        <TopBar title="Notifications" />
+        <div className="px-5"><GuestWall reason="get notified when apps you want go live" /></div>
+      </main>
+    );
+  }
 
   return (
     <main className="pb-10">

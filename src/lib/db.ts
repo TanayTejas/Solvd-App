@@ -72,6 +72,9 @@ export type GoogleInfo = { sub: string; email: string; name: string };
 /** The client's guest id belongs to a Google account, but nobody is signed in. */
 export class SignedOutError extends Error {}
 
+/** A guest (no profile) tried something that needs a profile. */
+export class ProfileRequiredError extends Error {}
+
 /**
  * Works out which user this request is for.
  * - Signed in with Google: the user linked to that Google account. The first time,
@@ -262,8 +265,15 @@ export type Action =
   | { type: "startBuilding"; requestId: string }
   | { type: "publishApp"; requestId?: string; app: App };
 
+// Guests (no profile yet) may only do these; everything else needs a profile.
+const GUEST_ACTIONS = new Set<Action["type"]>(["saveProfile", "setNiches", "markRead", "spendTrialUse"]);
+
 export async function runAction(uid: string, a: Action) {
   await ensureUser(uid);
+  if (!GUEST_ACTIONS.has(a.type)) {
+    const u = (await q<{ profile_complete: boolean }>(`select profile_complete from users where id = $1`, [uid]))[0];
+    if (!u?.profile_complete) throw new ProfileRequiredError();
+  }
   switch (a.type) {
     case "saveProfile": {
       const p = a.profile;
