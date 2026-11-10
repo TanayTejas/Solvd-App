@@ -35,3 +35,32 @@ h1, h2, h3, .font-display { font-family: var(--font-display); }
 .animate-slide-up { animation: slide-up .25s ease-out; }
 @keyframes pop { 0% { transform: scale(.9); opacity: 0 } 100% { transform: none; opacity: 1 } }
 .animate-pop { animation: pop .2s ease-out; }
+
+/* ---------- Opening animation (src/components/Splash.tsx) ---------- */
+.splash-mark { animation: mark-pop 0.45s cubic-bezier(.3,1.6,.5,1) 0.75s both; }
+.splash-mark .mark-ring { stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 0.45s ease-out 0.05s forwards, fade-out 0.2s ease 0.75s forwards; transform: rotate(-90deg); transform-origin: 60px 60px; }
+.splash-mark .mark-tick { stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 0.4s ease-out 0.3s forwards, tick-white 0.25s ease 0.75s forwards; }
+.splash-mark .mark-bg { animation: bg-green 0.25s ease 0.75s forwards; }
+.splash-mark .mark-dot { opacity: 0; transform-origin: 99px 28px; animation: dot-in 0.4s cubic-bezier(.3,1.8,.5,1) 0.95s forwards; }
+.splash-spark { opacity: 0; animation: spark 0.55s ease-out 0.78s forwards; }
+.splash-word { opacity: 0; animation: rise 0.4s ease-out 0.95s forwards; }
+.splash-period { animation: period-drop 0.45s cubic-bezier(.3,1.8,.5,1) 1.2s both; }
+.splash-tag { opacity: 0; animation: rise 0.4s ease-out 1.25s forwards; }
+
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes tick-white { to { stroke: #ffffff; } }
+@keyframes bg-green { to { fill: #22A55B; } }
+@keyframes mark-pop { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes dot-in { from { opacity: 0; transform: translate(-22px, 22px) scale(.3); } to { opacity: 1; transform: none; } }
+@keyframes spark {
+  0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-86px) scale(.4); }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes period-drop { 0% { transform: translateY(-40px); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-mark, .splash-mark *, .splash-spark, .splash-word, .splash-period, .splash-tag { animation: none !important; opacity: 1 !important; stroke-dashoffset: 0 !important; }
+  .splash-mark .mark-bg { fill: #22A55B; } .splash-mark .mark-tick { stroke: #fff; } .splash-mark .mark-ring, .splash-spark { opacity: 0 !important; }
+}
