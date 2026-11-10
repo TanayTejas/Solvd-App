@@ -81,8 +81,8 @@ Without a database, each browser keeps its own copy of the data ("local mode"). 
 
 **Setup (one time):**
 1. Vercel project → **Storage** → **Create Database** → **Neon** → connect it to this project. This adds `DATABASE_URL` for you.
-2. Neon console → **SQL Editor** → run `db/schema.sql`, then `db/seed.sql`.
-3. Redeploy (Vercel → Deployments → ⋯ → Redeploy), or just push a commit.
+2. Redeploy (Vercel → Deployments → ⋯ → Redeploy), or just push a commit.
+3. Open the app. On the first visit it creates the tables and loads the sample data by itself (`ensureSchema` in `src/lib/db.ts`). You don't need to run any SQL by hand. Running `db/schema.sql` and `db/seed.sql` in an SQL editor also works.
 
 **How it works:**
 - `GET /api/state?uid=…` (`src/app/api/state/route.ts`) loads everything one user needs.
