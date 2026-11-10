@@ -1,6 +1,8 @@
 // Server-only database code (runs in Next.js API routes, never in the browser).
 // Uses the DATABASE_URL that Vercel adds when you connect a Neon database.
 import "server-only";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { Pool } from "pg";
 import {
   APPS, FREE_USES, NOTIFICATION_STYLE, NOTIFICATIONS, REQUESTS,
@@ -28,6 +30,35 @@ async function q<T = Record<string, unknown>>(text: string, params: unknown[] = 
   return res.rows as T[];
 }
 
+/**
+ * Creates the tables and loads the sample data the first time the app talks to
+ * an empty database, so nobody has to run SQL by hand. Uses db/schema.sql and
+ * db/seed.sql. A Postgres lock stops two servers from doing it at the same time.
+ */
+let schemaReady: Promise<void> | null = null;
+export function ensureSchema() {
+  if (!schemaReady) {
+    schemaReady = (async () => {
+      const client = await pool().connect();
+      try {
+        await client.query("select pg_advisory_lock(424242)");
+        const { rows } = await client.query("select to_regclass('public.apps') is not null as ok");
+        const hasApps = rows[0].ok && (await client.query("select count(*)::int as n from apps")).rows[0].n > 0;
+        if (!hasApps) {
+          const dir = path.join(process.cwd(), "db");
+          await client.query(readFileSync(path.join(dir, "schema.sql"), "utf8"));
+          await client.query(readFileSync(path.join(dir, "seed.sql"), "utf8"));
+          console.log("solvd: created tables and loaded sample data");
+        }
+      } finally {
+        await client.query("select pg_advisory_unlock(424242)").catch(() => {});
+        client.release();
+      }
+    })().catch((e) => { schemaReady = null; throw e; });
+  }
+  return schemaReady;
+}
+
 const DAY = 86_400_000;
 const seedApp = (slug: string) => APPS.find((a) => a.slug === slug);
 const tints = ["bg-pink", "bg-sky", "bg-mint", "bg-peach", "bg-yellow", "bg-violet-tint"];
@@ -35,6 +66,7 @@ const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 /** Makes sure this browser's user exists. New users get the starter notifications. */
 export async function ensureUser(uid: string) {
+  await ensureSchema();
   const created = await q(
     `insert into users (id, name, role) values ($1, $2, 'user') on conflict (id) do nothing returning id`,
     [uid, `Guest ${uid.slice(-4)}`],
