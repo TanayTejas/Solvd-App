@@ -67,6 +67,40 @@ const seedApp = (slug: string) => APPS.find((a) => a.slug === slug);
 const tints = ["bg-pink", "bg-sky", "bg-mint", "bg-peach", "bg-yellow", "bg-violet-tint"];
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
+export type GoogleInfo = { sub: string; email: string; name: string };
+
+/** The client's guest id belongs to a Google account, but nobody is signed in. */
+export class SignedOutError extends Error {}
+
+/**
+ * Works out which user this request is for.
+ * - Signed in with Google: the user linked to that Google account. The first time,
+ *   the current guest account (with its profile and data) becomes the Google account.
+ * - Not signed in: the guest id from this browser, unless it belongs to a Google account.
+ */
+export async function resolveUid(clientUid: string, google: GoogleInfo | null): Promise<string> {
+  await ensureUser(clientUid);
+  const linked = (await q<{ id: string }>(`select id from users where google_sub = $1`, [google?.sub ?? "-"]))[0];
+  if (google) {
+    if (linked) return linked.id;
+    const claimed = await q(
+      `update users set google_sub = $2,
+         email = case when exists (select 1 from users where email = $3) then email else nullif($3, '') end
+       where id = $1 and google_sub is null returning id`,
+      [clientUid, google.sub, google.email],
+    );
+    if (claimed.length) return clientUid;
+    // This browser's guest id is already linked to someone else: make a fresh account.
+    const id = `u_g${google.sub.replace(/[^a-z0-9]/gi, "").toLowerCase()}`.slice(0, 34);
+    await ensureUser(id);
+    await q(`update users set google_sub = $2 where id = $1 and google_sub is null`, [id, google.sub]);
+    return id;
+  }
+  const owner = (await q<{ google_sub: string | null }>(`select google_sub from users where id = $1`, [clientUid]))[0];
+  if (owner?.google_sub) throw new SignedOutError();
+  return clientUid;
+}
+
 /** Makes sure this browser's user exists. New users get the starter notifications. */
 export async function ensureUser(uid: string) {
   await ensureSchema();
@@ -85,7 +119,7 @@ export async function ensureUser(uid: string) {
 }
 
 /** Everything the app needs for one user, in the same shape as the demo store. */
-export async function loadState(uid: string) {
+export async function loadState(uid: string, google: GoogleInfo | null = null) {
   await ensureUser(uid);
 
   const appRows = await q<{
@@ -203,7 +237,14 @@ export async function loadState(uid: string) {
     complete: Boolean(u?.profile_complete),
   };
 
-  return { apps, requests, upvoted, myApps, notifications, niches: nicheRows.map((n) => n.slug), profile };
+  // First sign-in with an empty profile: suggest the name from Google.
+  if (!profile.complete && google?.name) profile.name = google.name;
+
+  return {
+    uid,
+    account: google ? { email: google.email, name: google.name } : null,
+    apps, requests, upvoted, myApps, notifications, niches: nicheRows.map((n) => n.slug), profile,
+  };
 }
 
 // ---------- Actions (one per button in the app) ----------

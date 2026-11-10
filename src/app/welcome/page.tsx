@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EMPTY_PROFILE, SKILLS, type Profile } from "@/lib/data";
 import { useStore } from "@/lib/store";
-import { Avatar, Button, Chip, Logo } from "@/components/ui";
+import { Avatar, Button, Chip, GoogleButton, Logo } from "@/components/ui";
 
 function Welcome() {
   const store = useStore();
@@ -41,6 +41,17 @@ function Welcome() {
       </div>
       <h1 className="mt-7 text-[28px] font-bold leading-tight">{editing ? "Edit your profile" : "Create your profile"}</h1>
       <p className="mt-1 text-muted">{editing ? "Changes are saved to your account." : "Takes 10 seconds. This is how you'll appear on requests and reviews."}</p>
+
+      {!editing && store.authEnabled && !store.account && (
+        <div className="mt-6">
+          <GoogleButton onClick={store.signInWithGoogle} />
+          <p className="mt-2 text-center text-xs text-muted">Already have an account? This brings it back on any device.</p>
+          <div className="mt-5 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" />or just enter your name<span className="h-px flex-1 bg-line" /></div>
+        </div>
+      )}
+      {store.account && !editing && (
+        <p className="mt-4 rounded-2xl bg-green-tint px-4 py-2.5 text-sm text-green">✔ Signed in as {store.account.email}</p>
+      )}
 
       <form onSubmit={save} className="mt-6 space-y-6">
         <div className="flex items-center gap-4">

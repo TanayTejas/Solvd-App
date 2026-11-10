@@ -7,6 +7,7 @@
 //   /api/state and every action is also sent to /api/action, so everyone using
 //   the app sees the same requests, upvotes and notifications.
 
+import { signIn, signOut } from "next-auth/react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   APPS, EMPTY_PROFILE, FREE_USES, MY_APPS, NOTIFICATIONS, REQUESTS,
@@ -15,6 +16,8 @@ import {
 
 type State = {
   profile: Profile;
+  account: { email: string; name: string } | null; // signed-in Google account
+  authEnabled: boolean; // Google sign-in is set up on the server
   onboarded: boolean;
   niches: NicheSlug[];
   apps: App[];
@@ -28,6 +31,8 @@ type State = {
 
 const INITIAL: State = {
   profile: EMPTY_PROFILE,
+  account: null,
+  authEnabled: false,
   onboarded: false,
   niches: [], // chosen on the niche screen (or left empty with Skip)
   apps: APPS,
@@ -50,6 +55,8 @@ type Store = State & {
   toast: string | null;
   showToast: (msg: string) => void;
   saveProfile: (p: Omit<Profile, "complete">) => void;
+  signInWithGoogle: () => void;
+  signOutOfGoogle: () => Promise<void>;
   setNiches: (n: NicheSlug[]) => void;
   finishOnboarding: (n: NicheSlug[]) => void;
   toggleUpvote: (id: string) => void;
@@ -75,20 +82,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [uid, setUid] = useState("");
 
   // Load shared data from the database (if the server has one).
-  const refresh = useCallback(async (id: string) => {
+  const refresh = useCallback(async (id: string): Promise<boolean> => {
     try {
       const res = await fetch(`/api/state?uid=${id}`, { cache: "no-store" });
+      if (res.status === 409) {
+        // This browser's id belongs to a Google account that has signed out: start as a new guest.
+        const fresh = newUid();
+        localStorage.setItem(UID_KEY, fresh);
+        setUid(fresh);
+        setState(INITIAL);
+        return refresh(fresh);
+      }
       if (!res.ok) return false;
       const data = await res.json();
+      // Signed in with Google: the server tells us which account this is.
+      if (data.uid && data.uid !== id) {
+        localStorage.setItem(UID_KEY, data.uid);
+        setUid(data.uid);
+      }
+      const serverProfileDone = Boolean(data.profile?.complete);
       setState((s) => ({
         ...s,
+        account: data.account ?? null,
+        authEnabled: Boolean(data.authEnabled),
+        // A returning account on a new device skips onboarding and gets its saved niches.
+        onboarded: s.onboarded || (serverProfileDone && data.uid !== id),
+        niches: serverProfileDone && data.uid !== id ? data.niches : s.niches,
         apps: data.apps,
         requests: data.requests,
         upvoted: data.upvoted,
         myApps: data.myApps,
         notifications: data.notifications,
         // The database remembers your profile; keep the local one if the server has none yet.
-        profile: data.profile?.complete ? data.profile : s.profile,
+        profile: serverProfileDone ? data.profile : { ...s.profile, name: s.profile.name || data.profile?.name || "" },
       }));
       setMode("shared");
       return true;
@@ -149,6 +175,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     mode,
     toast,
     showToast,
+    signInWithGoogle: () => {
+      // After Google, come back to the start; the server links this guest to the Google account.
+      signIn("google", { callbackUrl: "/" });
+    },
+    signOutOfGoogle: async () => {
+      await signOut({ redirect: false });
+      localStorage.removeItem(KEY);
+      const id = newUid();
+      localStorage.setItem(UID_KEY, id);
+      setUid(id);
+      setState(INITIAL);
+      await refresh(id);
+    },
     saveProfile: (p) => {
       const profile: Profile = { ...p, name: p.name.trim(), complete: true };
       setState((s) => ({ ...s, profile }));

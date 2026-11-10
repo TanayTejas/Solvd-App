@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { nicheBySlug } from "@/lib/data";
 import { priceLabel } from "@/lib/match";
 import { useStore } from "@/lib/store";
-import { AppIcon, Avatar, Pill, TabBar } from "@/components/ui";
+import { AppIcon, Avatar, GoogleButton, Pill, TabBar } from "@/components/ui";
 
 export default function Me() {
-  const { niches, myApps, apps, requests, reset, showToast, profile } = useStore();
+  const { niches, myApps, apps, requests, reset, showToast, profile, account, authEnabled, signInWithGoogle, signOutOfGoogle } = useStore();
   const router = useRouter();
   const mine = myApps.map((m) => ({ m, app: apps.find((a) => a.slug === m.slug)! })).filter((x) => x.app);
   const monthly = mine.filter((x) => x.m.state === "kept" && x.app.pricingType === "monthly").reduce((s, x) => s + x.app.priceInr, 0)
@@ -20,7 +20,9 @@ export default function Me() {
     ["🔒", "Privacy & permissions", () => showToast("Apps only see what you allow. (demo)")],
     ["🛠️", profile.role === "developer" ? "Developer hub" : "Switch to developer mode", () => router.push("/dev")],
     ["❓", "Help", () => showToast("Help centre coming soon")],
-    ["↺", "Start over as a new user", () => { reset(); showToast("Signed out · starting fresh"); router.push("/welcome"); }],
+    account
+      ? ["↪", "Sign out", async () => { await signOutOfGoogle(); showToast("Signed out"); router.push("/welcome"); }]
+      : ["↺", "Start over as a new user", () => { reset(); showToast("Starting fresh"); router.push("/welcome"); }],
   ];
 
   return (
@@ -38,6 +40,16 @@ export default function Me() {
           <Link href="/onboarding?edit=1">Edit niches</Link>
         </div>
       </section>
+
+      {account ? (
+        <p className="mx-5 mt-4 rounded-2xl bg-green-tint px-4 py-2.5 text-center text-sm text-green">✔ Signed in with Google · {account.email}</p>
+      ) : authEnabled ? (
+        <section className="mx-5 mt-4 rounded-[20px] border border-line p-4">
+          <p className="font-display font-semibold">Use solvd. on any device</p>
+          <p className="mb-3 text-sm text-muted">Sign in with Google to keep your profile, apps and requests everywhere.</p>
+          <GoogleButton onClick={signInWithGoogle} label="Save with Google" />
+        </section>
+      ) : null}
 
       <section className="px-5 pt-5">
         <h2 className="font-display font-semibold">My apps</h2>

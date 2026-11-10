@@ -21,6 +21,8 @@ alter table users add column if not exists college text;
 alter table users add column if not exists year text;
 alter table users add column if not exists github text;
 alter table users add column if not exists profile_complete boolean not null default false;
+alter table users add column if not exists google_sub text;
+create unique index if not exists users_google_sub on users (google_sub);
 
 create table if not exists niches (
   id     serial primary key,

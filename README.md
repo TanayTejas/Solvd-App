@@ -59,7 +59,7 @@ The **Niches** tab (`/niches`) lets you browse apps by niche.
 | AI starter app | Template picked from keywords | LLM-generated app |
 | GitHub publish, security check, deploy | Simulated with timers | GitHub OAuth, real scan, Vercel API |
 | Payments in ₹ | Mock ("one bill") | Razorpay / UPI |
-| Profile | Asked on the first visit (name, finder or developer, skills, GitHub) and saved in the database. Each browser is its own account | Google sign-in so the profile follows you across devices |
+| Profile and login | Asked on the first visit (name, finder or developer, skills, GitHub) and saved in the database. Optional Google sign-in carries it to any device | — |
 
 ## 4. Put it online with Vercel (free)
 
@@ -95,7 +95,23 @@ Without a database, each browser keeps its own copy of the data ("local mode"). 
 
 If you edit `src/lib/data.ts`, run `npm run db:seed-sql` to rebuild `db/seed.sql`.
 
-## 6. Where things are
+## 6. Google sign-in
+
+Sign-in turns on by itself when these 3 environment variables are set in Vercel (Settings → Environment Variables). Without them, the app uses guest accounts and hides the Google button.
+
+| Variable | Where it comes from |
+|---|---|
+| `AUTH_GOOGLE_ID` | Google Cloud → Google Auth Platform → Clients → your Web client |
+| `AUTH_GOOGLE_SECRET` | same place |
+| `AUTH_SECRET` | any long random string, e.g. from https://generate-secret.vercel.app/32 |
+
+In Google Cloud, the client needs:
+- Authorized JavaScript origin: `https://solvd-app-three.vercel.app`
+- Authorized redirect URI: `https://solvd-app-three.vercel.app/api/auth/callback/google`
+
+**How accounts work:** everyone starts as a guest (an id in localStorage). The first time a guest signs in with Google, that guest account (profile, apps and requests) becomes their Google account (`users.google_sub`). On another device, signing in with the same Google account loads the same profile. The code is in `src/auth.ts` and `resolveUid` in `src/lib/db.ts`.
+
+## 7. Where things are
 
 ```
 src/app/          one folder per screen (page.tsx), with the screen number in a comment
