@@ -22,8 +22,8 @@ export default function Me() {
     ["🛠️", profile.role === "developer" ? "Developer hub" : "Switch to developer mode", () => router.push("/dev")],
     ["❓", "Help", () => showToast("Help centre coming soon")],
     account
-      ? ["↪", "Sign out", async () => { await signOutOfGoogle(); showToast("Signed out"); router.push("/welcome"); }]
-      : ["↺", "Start over as a new user", () => { reset(); showToast("Starting fresh"); router.push("/welcome"); }],
+      ? ["↪", "Sign out", async () => { await signOutOfGoogle(); showToast("Signed out"); router.replace("/welcome"); }]
+      : ["↺", "Start over as a new user", () => { reset(); showToast("Starting fresh"); router.replace("/welcome"); }],
   ];
 
   if (ready && !profile.complete) {

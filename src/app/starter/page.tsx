@@ -31,7 +31,7 @@ function Starter() {
 
   return (
     <main className="pb-10">
-      <TopBar title="No app found yet" />
+      <TopBar title="No app found yet" up="/search" />
       <p className="px-5 text-sm text-muted">for “{q}”</p>
 
       <h2 className="mt-6 px-5 text-2xl font-bold">✨ Let AI draft a starter app?</h2>

@@ -4,12 +4,15 @@ import Link from "next/link";
 import { DEVELOPER, nicheBySlug } from "@/lib/data";
 import { compactNumber } from "@/lib/match";
 import { useStore } from "@/lib/store";
+import { goBack } from "@/lib/nav";
+import { useRouter } from "next/navigation";
 import { GuestWall } from "@/components/AccountPrompt";
 import { Avatar, Logo, VerifiedBadge } from "@/components/ui";
 
 
 export default function DevHub() {
   const { requests, feedback, apps, profile, ready } = useStore();
+  const router = useRouter();
   const skills = profile.skills.length ? profile.skills : DEVELOPER.skills;
   // Requests that match this developer's skills: open or being built, most votes first.
   const matching = requests.filter((r) => r.status !== "live").sort((a, b) => b.upvotes - a.upvotes).slice(0, 3);
@@ -34,7 +37,7 @@ export default function DevHub() {
     <main className="pb-10">
       <header className="bg-yellow px-5 pb-5 pt-4">
         <div className="flex items-center">
-          <Link href="/me" className="mr-2 text-xl" aria-label="Back">‹</Link>
+          <button onClick={() => goBack(router, "/me")} className="-ml-2 mr-1 grid h-10 w-10 place-items-center rounded-full text-2xl hover:bg-black/5" aria-label="Back">‹</button>
           <h1 className="flex-1 font-display text-xl font-bold">Developer hub</h1>
           <Avatar name={profile.name || "?"} className="h-9 w-9 bg-white text-sm" />
         </div>

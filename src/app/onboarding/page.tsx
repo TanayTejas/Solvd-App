@@ -18,13 +18,13 @@ function Onboarding() {
   const skip = () => {
     store.finishOnboarding([]);
     store.showToast("Skipped · pick niches anytime in Me");
-    router.push("/feed");
+    router.replace("/feed");
   };
 
   const done = () => {
     store.finishOnboarding(picked);
     if (editing) store.showToast("Niches updated · your feed is re-tuned");
-    router.push(editing ? "/me" : "/feed");
+    router.replace(editing ? "/me" : "/feed");
   };
 
   return (

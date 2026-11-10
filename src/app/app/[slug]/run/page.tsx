@@ -42,7 +42,7 @@ export default function RunApp() {
     store.keepApp(app.slug);
     store.sendFeedback(app.slug, true, []);
     store.showToast(app.priceInr ? `Kept! ${priceLabel(app)} added to your one monthly bill (mock payment)` : `${app.name} added to My apps`);
-    router.push("/me");
+    router.replace("/me");
   };
 
   return (
@@ -54,7 +54,7 @@ export default function RunApp() {
           {left !== null && !kept && !trialOver && <Pill className="mt-0.5 bg-violet-tint !py-0.5 text-[11px] text-violet">Free trial · {left} of {FREE_USES} uses left</Pill>}
           {kept && <Pill className="mt-0.5 bg-green-tint !py-0.5 text-[11px] text-green">In My apps</Pill>}
         </div>
-        <CloseButton href={`/app/${app.slug}`} />
+        <CloseButton up={`/app/${app.slug}`} />
       </header>
 
       <div className="flex-1 p-5">

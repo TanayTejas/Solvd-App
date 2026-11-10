@@ -139,7 +139,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let id = localStorage.getItem(UID_KEY);
     if (!id) { id = newUid(); localStorage.setItem(UID_KEY, id); }
     setUid(id);
-    refresh(id).finally(() => setReady(true));
+    // Don't keep the app waiting on a slow or sleeping database: after 2.5 s,
+    // carry on with what's saved on this device and update when the server answers.
+    const slow = setTimeout(() => setReady(true), 2500);
+    refresh(id).finally(() => { clearTimeout(slow); setReady(true); });
   }, [refresh]);
 
   // Pick up other people's new requests and votes when you come back to the tab.

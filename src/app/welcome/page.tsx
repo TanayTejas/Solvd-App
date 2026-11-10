@@ -26,10 +26,10 @@ function Welcome() {
     store.saveProfile({ ...p, skills: p.role === "developer" ? p.skills : [], github: p.role === "developer" ? p.github : "" });
     if (editing) {
       store.showToast("Profile saved");
-      router.push("/me");
+      router.replace("/me");
     } else {
       store.showToast(`Welcome to solvd., ${p.name.trim().split(" ")[0]}! 👋`);
-      router.push("/onboarding");
+      router.replace("/onboarding");
     }
   };
 
@@ -117,7 +117,7 @@ function Welcome() {
         {!editing && (
           <button
             type="button"
-            onClick={() => { store.startGuest(); router.push(store.onboarded ? "/feed" : "/onboarding"); }}
+            onClick={() => { store.startGuest(); router.replace(store.onboarded ? "/feed" : "/onboarding"); }}
             className="w-full rounded-2xl border-2 border-line py-3 font-display font-semibold text-muted hover:border-violet hover:text-violet"
           >
             Browse as guest

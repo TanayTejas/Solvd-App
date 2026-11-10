@@ -31,13 +31,13 @@ function PostRequest() {
     if (!title.trim()) return;
     postRequest({ title: title.trim(), description: desc.trim(), niches: who, bountyInr: Math.max(0, Number(bounty) || 0) });
     showToast("Request posted! You'll be notified when it's built 🎉");
-    router.push("/requests?tab=new");
+    router.replace("/requests?tab=new");
   };
 
   if (ready && !profile.complete) {
     return (
       <main className="px-5 pb-10">
-        <header className="flex h-14 items-center"><h1 className="flex-1 font-display text-lg font-bold">Post a request</h1><CloseButton /></header>
+        <header className="flex h-14 items-center"><h1 className="flex-1 font-display text-lg font-bold">Post a request</h1><CloseButton up="/requests" /></header>
         <GuestWall reason="post a request" />
       </main>
     );
@@ -47,7 +47,7 @@ function PostRequest() {
     <main className="px-5 pb-10">
       <header className="flex h-14 items-center">
         <h1 className="flex-1 font-display text-lg font-bold">Post a request</h1>
-        <CloseButton />
+        <CloseButton up="/requests" />
       </header>
 
       <form onSubmit={submit} className="space-y-5">

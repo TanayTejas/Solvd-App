@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { App } from "@/lib/data";
 import { priceLabel } from "@/lib/match";
 import { useStore } from "@/lib/store";
+import { goBack } from "@/lib/nav";
 
 export function Logo({ className = "text-2xl" }: { className?: string }) {
   return (
@@ -65,12 +66,12 @@ export function AppCard({ app }: { app: App }) {
   );
 }
 
-export function TopBar({ title, back = true, right, className = "bg-white" }: { title?: React.ReactNode; back?: boolean; right?: React.ReactNode; className?: string }) {
+export function TopBar({ title, back = true, right, className = "bg-white", up = "/feed" }: { title?: React.ReactNode; back?: boolean; right?: React.ReactNode; className?: string; up?: string }) {
   const router = useRouter();
   return (
     <header className={`sticky top-0 z-20 flex h-14 items-center gap-2 px-4 ${className}`}>
       {back && (
-        <button aria-label="Back" onClick={() => (history.length > 1 ? router.back() : router.push("/feed"))} className="-ml-2 grid h-10 w-10 place-items-center rounded-full hover:bg-black/5">
+        <button aria-label="Back" onClick={() => goBack(router, up)} className="-ml-2 grid h-10 w-10 place-items-center rounded-full hover:bg-black/5">
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
       )}
@@ -80,10 +81,10 @@ export function TopBar({ title, back = true, right, className = "bg-white" }: { 
   );
 }
 
-export function CloseButton({ href }: { href?: string }) {
+export function CloseButton({ up = "/feed" }: { up?: string }) {
   const router = useRouter();
   return (
-    <button aria-label="Close" onClick={() => (href ? router.push(href) : router.back())} className="grid h-10 w-10 place-items-center rounded-full bg-canvas text-lg hover:bg-line">✕</button>
+    <button aria-label="Close" onClick={() => goBack(router, up)} className="grid h-10 w-10 place-items-center rounded-full bg-canvas text-lg hover:bg-line">✕</button>
   );
 }
 

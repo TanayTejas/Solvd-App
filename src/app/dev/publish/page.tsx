@@ -80,14 +80,14 @@ function Publish() {
     setTimeout(() => {
       publishApp({ requestId: req?.id, app });
       showToast(`🚀 ${app.name} is live! ${req?.upvotes ?? 0} upvoters notified`);
-      router.push("/notifications");
+      router.replace("/notifications");
     }, 900);
   };
 
   if (ready && !profile.complete) {
     return (
       <main className="pb-10">
-        <TopBar title="Publish your app" />
+        <TopBar title="Publish your app" up="/dev" />
         <div className="px-5"><GuestWall reason="publish apps" /></div>
       </main>
     );
@@ -95,7 +95,7 @@ function Publish() {
 
   return (
     <main className="pb-10">
-      <TopBar title="Publish your app" />
+      <TopBar title="Publish your app" up="/dev" />
       <div className="px-5">
         <label className="block rounded-2xl bg-violet-tint px-4 py-3 text-sm">
           <span className="text-muted">Solving:</span>
