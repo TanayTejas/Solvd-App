@@ -13,7 +13,7 @@ export default function Me() {
   const mine = myApps.map((m) => ({ m, app: apps.find((a) => a.slug === m.slug)! })).filter((x) => x.app);
   const monthly = mine.filter((x) => x.m.state === "kept" && x.app.pricingType === "monthly").reduce((s, x) => s + x.app.priceInr, 0)
     + mine.filter((x) => x.m.state === "kept" && x.app.pricingType === "per_use").reduce((s, x) => s + x.app.priceInr * 3, 0);
-  const myRequests = requests.filter((r) => r.author === CURRENT_USER.name);
+  const myRequests = requests.filter((r) => r.mine ?? r.author === CURRENT_USER.name);
 
   const rows: [string, string, () => void][] = [
     ["🔔", "Notifications", () => router.push("/notifications")],
@@ -67,6 +67,7 @@ export default function Me() {
               <span className="shrink-0 pl-2 text-muted">▲{r.upvotes} · <span className={r.status === "live" ? "text-green" : r.status === "building" ? "text-violet" : ""}>{r.status === "building" ? "Building" : r.status === "live" ? "Live" : "Open"}</span></span>
             </li>
           ))}
+          {!myRequests.length && <li className="text-sm text-muted">No requests yet. <Link href="/requests/new" className="font-semibold text-violet">Post one →</Link></li>}
         </ul>
       </section>
 

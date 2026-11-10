@@ -1,8 +1,11 @@
 "use client";
 
-// One shared store for the whole demo. It starts from the seed data and saves
-// changes in the browser (localStorage), so the demo works on Vercel with no
-// database. When Postgres is added, each action below becomes an API call.
+// One shared store for the whole app.
+// - "local" mode: starts from the seed data and saves changes in this browser
+//   (localStorage). Used when no database is connected, so the demo always works.
+// - "shared" mode: when the server has a DATABASE_URL, data is loaded from
+//   /api/state and every action is also sent to /api/action, so everyone using
+//   the app sees the same requests, upvotes and notifications.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
@@ -35,9 +38,13 @@ const INITIAL: State = {
 };
 
 const KEY = "solvd-demo-v1";
+const UID_KEY = "solvd-uid";
+
+const newUid = () => "u_" + Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
 
 type Store = State & {
   ready: boolean;
+  mode: "local" | "shared";
   toast: string | null;
   showToast: (msg: string) => void;
   setNiches: (n: NicheSlug[]) => void;
@@ -61,14 +68,61 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<State>(INITIAL);
   const [ready, setReady] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [mode, setMode] = useState<"local" | "shared">("local");
+  const [uid, setUid] = useState("");
+
+  // Load shared data from the database (if the server has one).
+  const refresh = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/state?uid=${id}`, { cache: "no-store" });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setState((s) => ({
+        ...s,
+        apps: data.apps,
+        requests: data.requests,
+        upvoted: data.upvoted,
+        myApps: data.myApps,
+        notifications: data.notifications,
+      }));
+      setMode("shared");
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) setState({ ...INITIAL, ...JSON.parse(raw) });
     } catch {}
-    setReady(true);
-  }, []);
+    let id = localStorage.getItem(UID_KEY);
+    if (!id) { id = newUid(); localStorage.setItem(UID_KEY, id); }
+    setUid(id);
+    refresh(id).finally(() => setReady(true));
+  }, [refresh]);
+
+  // Pick up other people's new requests and votes when you come back to the tab.
+  useEffect(() => {
+    if (mode !== "shared" || !uid) return;
+    const onFocus = () => { if (document.visibilityState === "visible") refresh(uid); };
+    document.addEventListener("visibilitychange", onFocus);
+    return () => document.removeEventListener("visibilitychange", onFocus);
+  }, [mode, uid, refresh]);
+
+  // Send one action to the database (does nothing in local mode).
+  const send = useCallback(
+    (action: Record<string, unknown>) => {
+      if (mode !== "shared") return Promise.resolve();
+      return fetch("/api/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid, action }),
+      }).then((r) => { if (!r.ok) console.warn("Could not save", action.type); }).catch(() => {});
+    },
+    [mode, uid],
+  );
 
   useEffect(() => {
     if (ready) localStorage.setItem(KEY, JSON.stringify(state));
@@ -87,11 +141,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const store = useMemo<Store>(() => ({
     ...state,
     ready,
+    mode,
     toast,
     showToast,
-    setNiches: (niches) => setState((s) => ({ ...s, niches })),
-    finishOnboarding: (niches) => setState((s) => ({ ...s, niches, onboarded: true })),
-    toggleUpvote: (id) =>
+    setNiches: (niches) => { setState((s) => ({ ...s, niches })); send({ type: "setNiches", niches }); },
+    finishOnboarding: (niches) => { setState((s) => ({ ...s, niches, onboarded: true })); send({ type: "setNiches", niches }); },
+    toggleUpvote: (id) => {
+      send({ type: "toggleUpvote", requestId: id });
       setState((s) => {
         const on = s.upvoted.includes(id);
         return {
@@ -99,19 +155,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           upvoted: on ? s.upvoted.filter((x) => x !== id) : [...s.upvoted, id],
           requests: s.requests.map((r) => (r.id === id ? { ...r, upvotes: r.upvotes + (on ? -1 : 1) } : r)),
         };
-      }),
+      });
+    },
     toggleFavourite: (slug) =>
       setState((s) => ({
         ...s,
         favourites: s.favourites.includes(slug) ? s.favourites.filter((x) => x !== slug) : [...s.favourites, slug],
       })),
     postRequest: (r) => {
-      const id = `r-${Date.now()}`;
+      const id = `r-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      send({ type: "postRequest", id, ...r });
       setState((s) => ({
         ...s,
         upvoted: [...s.upvoted, id],
         requests: [
-          { ...r, id, upvotes: 1, status: "open", builders: 0, author: "Priya", createdAt: Date.now() },
+          { ...r, id, upvotes: 1, status: "open", builders: 0, author: "Priya", createdAt: Date.now(), mine: true },
           ...s.requests,
         ],
       }));
@@ -121,6 +179,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const existing = state.myApps.find((m) => m.slug === slug);
       if (existing?.state === "kept") return Infinity;
       const left = existing ? Math.max(0, existing.usesLeft - 1) : FREE_USES - 1;
+      send({ type: "spendTrialUse", slug });
       setState((s) => ({
         ...s,
         myApps: existing
@@ -129,29 +188,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }));
       return left;
     },
-    keepApp: (slug) =>
+    keepApp: (slug) => {
+      send({ type: "keepApp", slug });
       setState((s) => ({
         ...s,
         myApps: s.myApps.some((m) => m.slug === slug)
           ? s.myApps.map((m) => (m.slug === slug ? { ...m, state: "kept" } : m))
           : [...s.myApps, { slug, state: "kept", usesLeft: 0 }],
-      })),
-    removeApp: (slug) => setState((s) => ({ ...s, myApps: s.myApps.filter((m) => m.slug !== slug) })),
-    sendFeedback: (slug, solved, reasons) =>
-      setState((s) => ({ ...s, feedback: [...s.feedback, { slug, solved, reasons }] })),
-    markRead: (id) =>
+      }));
+    },
+    removeApp: (slug) => { send({ type: "removeApp", slug }); setState((s) => ({ ...s, myApps: s.myApps.filter((m) => m.slug !== slug) })); },
+    sendFeedback: (slug, solved, reasons) => {
+      send({ type: "sendFeedback", slug, solved, reasons });
+      setState((s) => ({ ...s, feedback: [...s.feedback, { slug, solved, reasons }] }));
+    },
+    markRead: (id) => {
+      send({ type: "markRead", id });
       setState((s) => ({
         ...s,
         notifications: s.notifications.map((n) => (!id || n.id === id ? { ...n, read: true } : n)),
-      })),
-    startBuilding: (requestId) =>
+      }));
+    },
+    startBuilding: (requestId) => {
+      send({ type: "startBuilding", requestId });
       setState((s) => ({
         ...s,
         requests: s.requests.map((r) =>
           r.id === requestId ? { ...r, status: "building", builders: r.builders + 1 } : r,
         ),
-      })),
-    publishApp: ({ requestId, app }) =>
+      }));
+    },
+    publishApp: ({ requestId, app }) => {
+      // After saving, reload so the new notification comes from the database.
+      send({ type: "publishApp", requestId, app }).then(() => { if (mode === "shared") refresh(uid); });
       setState((s) => {
         const exists = s.apps.some((a) => a.slug === app.slug);
         const req = s.requests.find((r) => r.id === requestId);
@@ -165,19 +234,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         // The loop: everyone who posted or upvoted the request is notified.
         if (req) {
           next = notify(next, {
-            icon: "🎉", tint: "bg-yellow",
+            type: "live", icon: "🎉", tint: "bg-yellow",
             title: `${app.name} is live!`,
             body: `The request “${req.title}” (▲${req.upvotes}) now has an app. All upvoters were notified.`,
             link: `/app/${app.slug}`, linkLabel: "Try free",
           });
         }
         return next;
-      }),
-    reset: () => {
-      localStorage.removeItem(KEY);
-      setState(INITIAL);
+      });
     },
-  }), [state, ready, toast, showToast]);
+    reset: () => {
+      // Start over as a brand-new user (in shared mode, other people's data stays).
+      localStorage.removeItem(KEY);
+      const id = newUid();
+      localStorage.setItem(UID_KEY, id);
+      setUid(id);
+      setState(INITIAL);
+      refresh(id);
+    },
+  }), [state, ready, mode, toast, showToast, send, refresh, uid]);
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }

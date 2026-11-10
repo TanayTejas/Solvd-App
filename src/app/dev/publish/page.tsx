@@ -36,7 +36,15 @@ function Publish() {
   const openReqs = requests.filter((r) => r.status !== "live");
   const [reqId, setReqId] = useState(params.get("request") ?? "r-attendance");
   const req = requests.find((r) => r.id === reqId);
-  const guess = REPOS.find((r) => req?.title.toLowerCase().includes(r.forTitle)) ?? REPOS[0];
+  // Pick the matching demo repo, or make one from the request title (e.g. "water-cooler-status").
+  const custom = req && {
+    repo: slugify(req.title).split("-").slice(0, 3).join("-"),
+    name: req.title.split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join("").replace(/[^A-Za-z0-9]/g, ""),
+    icon: "✨", tint: "bg-violet-tint", forTitle: "",
+  };
+  const matched = REPOS.find((r) => req?.title.toLowerCase().includes(r.forTitle));
+  const repos = matched || !custom ? REPOS : [custom, ...REPOS];
+  const guess = matched ?? repos[0];
   const [repo, setRepo] = useState(guess.repo);
   const [checked, setChecked] = useState(0); // how many checks passed
   const [deployed, setDeployed] = useState(false);
@@ -53,7 +61,7 @@ function Publish() {
     return () => timers.forEach(clearTimeout);
   }, [repo]);
 
-  const meta = REPOS.find((r) => r.repo === repo)!;
+  const meta = repos.find((r) => r.repo === repo) ?? guess;
 
   const publish = () => {
     setPublishing(true);
@@ -89,7 +97,7 @@ function Publish() {
       <div className="mt-6 space-y-7 px-5">
         <Step n={1} title="Connect GitHub repo" done>
           <select value={repo} onChange={(e) => setRepo(e.target.value)} className="w-full rounded-2xl border border-line bg-white px-4 py-3 font-mono text-sm outline-none focus:border-violet">
-            {REPOS.map((r) => <option key={r.repo} value={r.repo}>{DEVELOPER.handle} / {r.repo}</option>)}
+            {repos.map((r) => <option key={r.repo} value={r.repo}>{DEVELOPER.handle} / {r.repo}</option>)}
           </select>
         </Step>
 

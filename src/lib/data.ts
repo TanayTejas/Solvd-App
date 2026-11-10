@@ -234,6 +234,7 @@ export type AppRequest = {
   author: string;
   linkedAppSlug?: string;
   createdAt: number; // ms timestamp
+  mine?: boolean; // posted by the current user (set by the database API)
 };
 
 const day = 24 * 60 * 60 * 1000;
@@ -249,8 +250,21 @@ export const REQUESTS: AppRequest[] = [
   { id: "r-gym", title: "Gym crowd meter for the campus gym", description: "Know how crowded the gym is before walking there.", niches: ["fitness", "student"], upvotes: 22, bountyInr: 200, status: "open", builders: 0, author: "Aman", createdAt: T0 - 1 * day },
 ];
 
+export type NotificationType = "live" | "building" | "trial" | "reply" | "welcome" | "kept";
+
+/** Icon and colour for each notification type (the database only stores the type). */
+export const NOTIFICATION_STYLE: Record<NotificationType, { icon: string; tint: string }> = {
+  live: { icon: "🎉", tint: "bg-yellow" },
+  building: { icon: "💡", tint: "bg-violet-tint" },
+  trial: { icon: "⏰", tint: "bg-pink" },
+  reply: { icon: "⭐", tint: "bg-mint" },
+  welcome: { icon: "✅", tint: "bg-sky" },
+  kept: { icon: "🧾", tint: "bg-canvas" },
+};
+
 export type Notification = {
   id: string;
+  type?: NotificationType;
   icon: string;
   tint: string;
   title: string;
@@ -262,12 +276,12 @@ export type Notification = {
 };
 
 export const NOTIFICATIONS: Notification[] = [
-  { id: "n1", icon: "🎉", tint: "bg-yellow", title: "AttendCalc is live!", body: "The app you upvoted is ready.", link: "/app/attendcalc", linkLabel: "Try free", read: false, createdAt: T0 - 1 * 3600e3 },
-  { id: "n2", icon: "💡", tint: "bg-violet-tint", title: "3 developers started building", body: "'Laundry slot booking' is being built.", link: "/requests", linkLabel: "See request", read: false, createdAt: T0 - 5 * 3600e3 },
-  { id: "n3", icon: "⏰", tint: "bg-pink", title: "Your MessMate trial ends tomorrow", body: "2 free uses left, then ₹9/month.", link: "/app/messmate", linkLabel: "Open", read: false, createdAt: T0 - 20 * 3600e3 },
-  { id: "n4", icon: "⭐", tint: "bg-mint", title: "Rahul replied to your feedback", body: "On BillSplit: “Trip mode is coming next week!”", link: "/app/billsplit", read: false, createdAt: T0 - 26 * 3600e3 },
-  { id: "n5", icon: "✅", tint: "bg-sky", title: "Welcome to solvd.", body: "Your feed is tuned for Student · Hosteller.", read: true, createdAt: T0 - 4 * day },
-  { id: "n6", icon: "🧾", tint: "bg-canvas", title: "BillSplit added to My apps", body: "You kept it after the free trial.", read: true, createdAt: T0 - 6 * day },
+  { id: "n1", type: "live", icon: "🎉", tint: "bg-yellow", title: "AttendCalc is live!", body: "The app you upvoted is ready.", link: "/app/attendcalc", linkLabel: "Try free", read: false, createdAt: T0 - 1 * 3600e3 },
+  { id: "n2", type: "building", icon: "💡", tint: "bg-violet-tint", title: "3 developers started building", body: "'Laundry slot booking' is being built.", link: "/requests", linkLabel: "See request", read: false, createdAt: T0 - 5 * 3600e3 },
+  { id: "n3", type: "trial", icon: "⏰", tint: "bg-pink", title: "Your MessMate trial ends tomorrow", body: "2 free uses left, then ₹9/month.", link: "/app/messmate", linkLabel: "Open", read: false, createdAt: T0 - 20 * 3600e3 },
+  { id: "n4", type: "reply", icon: "⭐", tint: "bg-mint", title: "Rahul replied to your feedback", body: "On BillSplit: “Trip mode is coming next week!”", link: "/app/billsplit", read: false, createdAt: T0 - 26 * 3600e3 },
+  { id: "n5", type: "welcome", icon: "✅", tint: "bg-sky", title: "Welcome to solvd.", body: "Your feed is tuned for Student · Hosteller.", read: true, createdAt: T0 - 4 * day },
+  { id: "n6", type: "kept", icon: "🧾", tint: "bg-canvas", title: "BillSplit added to My apps", body: "You kept it after the free trial.", read: true, createdAt: T0 - 6 * day },
 ];
 
 export type MyApp = { slug: string; state: "kept" | "trial"; usesLeft: number };

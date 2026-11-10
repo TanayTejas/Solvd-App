@@ -52,13 +52,13 @@ The **Niches** tab (`/niches`) lets you browse apps by niche.
 | Feature | In this demo | Later |
 |---|---|---|
 | Niche feed, match %, search | Real logic, keyword-based (`src/lib/match.ts`) | LLM / embeddings |
-| Requests, upvotes, posting | Real, saved in the browser (localStorage) | Postgres, shared by all users |
-| Free trial uses, Keep it, feedback | Real, saved in the browser | Postgres + payments |
+| Requests, upvotes, posting | Real. Shared via Postgres when a database is connected, otherwise saved in the browser | — |
+| Free trial uses, Keep it, feedback, notifications | Real, same as above | Real payments |
 | BillSplit, AttendCalc mini-apps | Working mini-apps | Each one a separate Vercel app |
 | AI starter app | Template picked from keywords | LLM-generated app |
 | GitHub publish, security check, deploy | Simulated with timers | GitHub OAuth, real scan, Vercel API |
 | Payments in ₹ | Mock ("one bill") | Razorpay / UPI |
-| Login | Fixed user "Priya" | Supabase Auth or Clerk (Google) |
+| Login | Each browser is an anonymous user (shown as "Priya") | Google sign-in |
 
 ## 4. Put it online with Vercel (free)
 
@@ -75,16 +75,21 @@ The **Niches** tab (`/niches`) lets you browse apps by niche.
 
 Each push to `main` redeploys on its own.
 
-## 5. Next stage: the database (Neon or Supabase)
+## 5. Shared database (Neon Postgres)
 
-The schema follows the section 9.2 data model.
+Without a database, each browser keeps its own copy of the data ("local mode"). With one, everyone using the link sees the same requests, upvotes, kept apps and notifications ("shared mode"). The app picks the mode by itself: if the database is missing or down, it falls back to local mode, so the demo never breaks.
 
-1. Create a free Postgres database on https://neon.tech (or https://supabase.com).
-2. Open its **SQL editor**, paste in `db/schema.sql` and run it. Then do the same with `db/seed.sql`, which loads the same sample apps and requests as the demo.
-3. Copy the connection string and add it to Vercel as an environment variable called `DATABASE_URL` (Project → Settings → Environment Variables).
-4. Swap the store actions one at a time for API routes. Start with requests and upvotes, since those must be shared between users:
-   - `src/lib/store.tsx` has one function per action (`toggleUpvote`, `postRequest`, `keepApp`, …).
-   - For each one, add a route such as `src/app/api/requests/route.ts` that runs the SQL, and make the store call it with `fetch`.
+**Setup (one time):**
+1. Vercel project → **Storage** → **Create Database** → **Neon** → connect it to this project. This adds `DATABASE_URL` for you.
+2. Neon console → **SQL Editor** → run `db/schema.sql`, then `db/seed.sql`.
+3. Redeploy (Vercel → Deployments → ⋯ → Redeploy), or just push a commit.
+
+**How it works:**
+- `GET /api/state?uid=…` (`src/app/api/state/route.ts`) loads everything one user needs.
+- `POST /api/action` (`src/app/api/action/route.ts`) saves one action, like `toggleUpvote` or `postRequest`. All the SQL is in `src/lib/db.ts`, in one `case` per action.
+- Until login is added, each browser gets a random user id (`u_…`) saved in localStorage. "Reset demo data" in Me starts you as a new user.
+
+**Run it locally with a database:** copy `.env.example` to `.env.local`, paste your Neon connection string, then run `npm run dev`.
 
 If you edit `src/lib/data.ts`, run `npm run db:seed-sql` to rebuild `db/seed.sql`.
 
@@ -95,7 +100,9 @@ src/app/          one folder per screen (page.tsx), with the screen number in a 
 src/components/   shared UI (logo, cards, chips, tab bar, buttons) and the mini-apps
 src/lib/data.ts   all sample data (apps, requests, notifications)
 src/lib/match.ts  the search and match % logic
-src/lib/store.tsx app state + actions (saved to localStorage)
+src/lib/store.tsx app state + actions (local or shared mode)
+src/lib/db.ts     all database queries (server only)
+src/app/api/      the two API routes
 src/app/globals.css  design tokens: violet #7C5CFF, yellow #FFD84D, green #22A55B …
 db/               Postgres schema and seed
 ```
