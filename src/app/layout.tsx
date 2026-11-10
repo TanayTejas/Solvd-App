@@ -3,6 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
 import Toast from "@/components/Toast";
+import ProfileGate from "@/components/ProfileGate";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const poppins = Poppins({ variable: "--font-poppins", subsets: ["latin"], weight: ["500", "600", "700", "800"] });
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <div className="mx-auto min-h-dvh max-w-[430px] bg-white sm:my-0 sm:shadow-[0_0_60px_-20px_rgba(60,40,140,0.35)] relative">
             {children}
             <Toast />
+            <ProfileGate />
           </div>
         </StoreProvider>
       </body>

@@ -24,7 +24,7 @@ function Row({ title, apps, subtitle }: { title: string; subtitle?: string; apps
 }
 
 export default function Feed() {
-  const { apps, niches, requests, upvoted, toggleUpvote } = useStore();
+  const { apps, niches, requests, upvoted, toggleUpvote, profile } = useStore();
   const router = useRouter();
   const [q, setQ] = useState("");
 
@@ -47,7 +47,7 @@ export default function Feed() {
       <header className="sticky top-0 z-20 flex h-14 items-center gap-1 bg-white/95 px-5 backdrop-blur">
         <Logo className="flex-1 text-[26px]" />
         <BellButton />
-        <Link href="/me" aria-label="Me"><Avatar name="Priya" /></Link>
+        <Link href="/me" aria-label="Me"><Avatar name={profile.name || "?"} /></Link>
       </header>
 
       <form

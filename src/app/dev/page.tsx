@@ -2,16 +2,23 @@
 // Screen 11 · Developer hub
 import Link from "next/link";
 import { DEVELOPER, nicheBySlug } from "@/lib/data";
+import { compactNumber } from "@/lib/match";
 import { useStore } from "@/lib/store";
 import { Avatar, Logo, VerifiedBadge } from "@/components/ui";
 
-const WEEKLY = [{ w: "W1", v: 90 }, { w: "W2", v: 180 }, { w: "W3", v: 340 }];
 
 export default function DevHub() {
-  const { requests, feedback, apps } = useStore();
+  const { requests, feedback, apps, profile } = useStore();
+  const skills = profile.skills.length ? profile.skills : DEVELOPER.skills;
   // Requests that match this developer's skills: open or being built, most votes first.
   const matching = requests.filter((r) => r.status !== "live").sort((a, b) => b.upvotes - a.upvotes).slice(0, 3);
-  const myApps = apps.filter((a) => a.developer === DEVELOPER.handle);
+  const myApps = apps.filter((a) => a.mine);
+  // Until you publish, the hub shows the sample developer's numbers so the screen isn't empty.
+  const sample = myApps.length === 0;
+  const users = sample ? 340 : myApps.reduce((n, a) => n + a.usersCount, 0);
+  const rating = sample ? 4.5 : myApps.reduce((n, a) => n + a.rating, 0) / myApps.length;
+  const earned = sample ? "₹2.1k" : `₹${myApps.reduce((n, a) => n + a.priceInr * Math.round(a.usersCount * 0.3), 0)}`;
+  const weekly = [0.26, 0.53, 1].map((f, i) => ({ w: `W${i + 1}`, v: Math.round(users * f) }));
 
   return (
     <main className="pb-10">
@@ -19,13 +26,15 @@ export default function DevHub() {
         <div className="flex items-center">
           <Link href="/me" className="mr-2 text-xl" aria-label="Back">‹</Link>
           <h1 className="flex-1 font-display text-xl font-bold">Developer hub</h1>
-          <Avatar name={DEVELOPER.name} className="h-9 w-9 bg-white text-sm" />
+          <Avatar name={profile.name || "?"} className="h-9 w-9 bg-white text-sm" />
         </div>
-        <p className="mt-2 text-sm">Your app: <b>MessMate</b> <VerifiedBadge /> {myApps.length > 1 && <span className="text-ink/60">+{myApps.length - 1} more</span>}</p>
+        <p className="mt-2 text-sm">Hi {profile.name.split(" ")[0] || "there"} 👋 {sample
+          ? <span className="text-ink/70">No apps yet. Build one from a request below.</span>
+          : <>Your app{myApps.length > 1 ? "s" : ""}: <b>{myApps.map((a) => a.name).join(", ")}</b> <VerifiedBadge /></>}</p>
       </header>
 
       <section className="grid grid-cols-3 gap-3 px-5 pt-5">
-        {[["340", "users", "bg-violet-tint"], ["4.5★", "rating", "bg-mint"], ["₹2.1k", "earned", "bg-peach"]].map(([v, l, t]) => (
+        {[[compactNumber(users), "users", "bg-violet-tint"], [`${rating.toFixed(1)}★`, "rating", "bg-mint"], [earned, "earned", "bg-peach"]].map(([v, l, t]) => (
           <div key={l} className={`${t} rounded-[20px] py-4 text-center`}>
             <p className="font-display text-xl font-bold">{v}</p>
             <p className="text-xs text-ink/60">{l}</p>
@@ -34,12 +43,12 @@ export default function DevHub() {
       </section>
 
       <section className="mx-5 mt-4 rounded-[20px] border border-line p-4">
-        <p className="font-display text-sm font-semibold">Weekly users</p>
+        <p className="font-display text-sm font-semibold">Weekly users {sample && <span className="font-normal text-muted">· sample (MessMate by Rahul)</span>}</p>
         <div className="mt-3 space-y-2">
-          {WEEKLY.map((x) => (
+          {weekly.map((x) => (
             <div key={x.w} className="flex items-center gap-2 text-xs">
               <span className="w-6 text-muted">{x.w}</span>
-              <div className="h-3 flex-1 rounded-full bg-canvas"><div className="h-3 rounded-full bg-violet" style={{ width: `${(x.v / 360) * 100}%` }} /></div>
+              <div className="h-3 flex-1 rounded-full bg-canvas"><div className="h-3 rounded-full bg-violet" style={{ width: `${(x.v / Math.max(1, weekly[2].v * 1.05)) * 100}%` }} /></div>
               <span className="w-8 text-right font-semibold">{x.v}</span>
             </div>
           ))}
@@ -47,7 +56,7 @@ export default function DevHub() {
       </section>
 
       <section className="px-5 pt-6">
-        <h2 className="font-display font-semibold">Requests matching your skills <span className="text-sm font-normal text-muted">({DEVELOPER.skills.join(" · ")})</span></h2>
+        <h2 className="font-display font-semibold">Requests matching your skills <span className="text-sm font-normal text-muted">({skills.join(" · ")})</span></h2>
         <ul className="mt-3 space-y-3">
           {matching.map((r, i) => (
             <li key={r.id} className="flex items-center gap-3 rounded-[20px] border border-line p-4">

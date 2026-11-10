@@ -23,6 +23,7 @@ Open http://localhost:3000. For the phone view in Chrome, press **F12**, then th
 
 | # | Screen | URL |
 |---|---|---|
+| 0 | Create your profile (first visit) | `/welcome` |
 | 1 | Pick your niche | `/onboarding` |
 | 2 | Your feed (home) | `/feed` |
 | 3 | Search results | `/search?q=split hostel mess bill` |
@@ -39,7 +40,7 @@ Open http://localhost:3000. For the phone view in Chrome, press **F12**, then th
 The **Niches** tab (`/niches`) lets you browse apps by niche.
 
 ### Demo script (about 2 minutes, good for a presentation)
-1. Pick **Student + Hosteller** and press Continue. The feed fills with rows for your niches.
+1. Fill in **Create your profile** (name and year), then pick **Student + Hosteller** and press Continue. The feed fills with rows for your niches.
 2. Search **"split hostel mess bill"**. You get 3 apps with a match %.
 3. Open **MessMate** to show the 92% match and the trust panel. Then **Try free** on BillSplit and tap the friends to mark them paid.
 4. Press "Done trying?", then **Yes, keep it**. It shows up in **Me → My apps**.
@@ -58,7 +59,7 @@ The **Niches** tab (`/niches`) lets you browse apps by niche.
 | AI starter app | Template picked from keywords | LLM-generated app |
 | GitHub publish, security check, deploy | Simulated with timers | GitHub OAuth, real scan, Vercel API |
 | Payments in ₹ | Mock ("one bill") | Razorpay / UPI |
-| Login | Each browser is an anonymous user (shown as "Priya") | Google sign-in |
+| Profile | Asked on the first visit (name, college, year, finder or developer, skills, GitHub) and saved in the database. Each browser is its own account | Google sign-in so the profile follows you across devices |
 
 ## 4. Put it online with Vercel (free)
 
@@ -87,7 +88,8 @@ Without a database, each browser keeps its own copy of the data ("local mode"). 
 **How it works:**
 - `GET /api/state?uid=…` (`src/app/api/state/route.ts`) loads everything one user needs.
 - `POST /api/action` (`src/app/api/action/route.ts`) saves one action, like `toggleUpvote` or `postRequest`. All the SQL is in `src/lib/db.ts`, in one `case` per action.
-- Until login is added, each browser gets a random user id (`u_…`) saved in localStorage. "Reset demo data" in Me starts you as a new user.
+- Until login is added, each browser gets a random user id (`u_…`) saved in localStorage. Your profile is stored in the `users` table under that id. "Start over as a new user" in Me gives you a fresh id.
+- Database changes for newer versions (like the profile columns) are in `db/schema.sql` as `alter table … add column if not exists`. They are applied automatically when the server starts.
 
 **Run it locally with a database:** copy `.env.example` to `.env.local`, paste your Neon connection string, then run `npm run dev`.
 

@@ -9,8 +9,18 @@ create table if not exists users (
   avatar_url   text,
   role         text not null default 'user' check (role in ('user', 'developer')),
   skills       text[] not null default '{}',
+  college      text,
+  year         text,
+  github       text,
+  profile_complete boolean not null default false,
   created_at   timestamptz not null default now()
 );
+
+-- Columns added after the first version (safe to run again).
+alter table users add column if not exists college text;
+alter table users add column if not exists year text;
+alter table users add column if not exists github text;
+alter table users add column if not exists profile_complete boolean not null default false;
 
 create table if not exists niches (
   id     serial primary key,

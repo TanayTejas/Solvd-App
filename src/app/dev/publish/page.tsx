@@ -4,7 +4,7 @@
 // dependency/secret/licence scan, and the Vercel deploy API.
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { DEVELOPER, type App, type PricingType } from "@/lib/data";
+import { handleFor, type App, type PricingType } from "@/lib/data";
 import { slugify } from "@/lib/match";
 import { useStore } from "@/lib/store";
 import { Button, TopBar } from "@/components/ui";
@@ -32,7 +32,8 @@ function Step({ n, title, done, children }: { n: number; title: string; done?: b
 function Publish() {
   const params = useSearchParams();
   const router = useRouter();
-  const { requests, startBuilding, publishApp, showToast } = useStore();
+  const { requests, startBuilding, publishApp, showToast, profile } = useStore();
+  const handle = handleFor(profile);
   const openReqs = requests.filter((r) => r.status !== "live");
   const [reqId, setReqId] = useState(params.get("request") ?? "r-attendance");
   const req = requests.find((r) => r.id === reqId);
@@ -69,7 +70,7 @@ function Publish() {
     const app: App = {
       slug: slugify(meta.name), name: meta.name, icon: meta.icon, tint: meta.tint,
       tagline: req?.title ?? "A tiny app", description: req?.description || `${meta.name}: ${req?.title}`,
-      developer: DEVELOPER.handle, niches: req?.niches ?? ["student"], pricingType: pricing,
+      developer: profile.name || handle, mine: true, niches: req?.niches ?? ["student"], pricingType: pricing,
       priceInr: pricing === "free" ? 0 : pricing === "monthly" ? 9 : 2,
       rating: 4.7, usersCount: req?.upvotes ?? 0, status: pricing === "free" ? "beta" : "live",
       verified: true, securityScore: 92, licence: "MIT", updatedDaysAgo: 0, newDeveloper: true,
@@ -97,7 +98,7 @@ function Publish() {
       <div className="mt-6 space-y-7 px-5">
         <Step n={1} title="Connect GitHub repo" done>
           <select value={repo} onChange={(e) => setRepo(e.target.value)} className="w-full rounded-2xl border border-line bg-white px-4 py-3 font-mono text-sm outline-none focus:border-violet">
-            {repos.map((r) => <option key={r.repo} value={r.repo}>{DEVELOPER.handle} / {r.repo}</option>)}
+            {repos.map((r) => <option key={r.repo} value={r.repo}>{handle} / {r.repo}</option>)}
           </select>
         </Step>
 

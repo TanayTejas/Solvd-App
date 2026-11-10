@@ -9,11 +9,12 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
-  APPS, FREE_USES, MY_APPS, NOTIFICATIONS, REQUESTS,
-  type App, type AppRequest, type MyApp, type NicheSlug, type Notification,
+  APPS, EMPTY_PROFILE, FREE_USES, MY_APPS, NOTIFICATIONS, REQUESTS,
+  type App, type AppRequest, type MyApp, type NicheSlug, type Notification, type Profile,
 } from "./data";
 
 type State = {
+  profile: Profile;
   onboarded: boolean;
   niches: NicheSlug[];
   apps: App[];
@@ -26,6 +27,7 @@ type State = {
 };
 
 const INITIAL: State = {
+  profile: EMPTY_PROFILE,
   onboarded: false,
   niches: ["student", "hosteller"],
   apps: APPS,
@@ -47,6 +49,7 @@ type Store = State & {
   mode: "local" | "shared";
   toast: string | null;
   showToast: (msg: string) => void;
+  saveProfile: (p: Omit<Profile, "complete">) => void;
   setNiches: (n: NicheSlug[]) => void;
   finishOnboarding: (n: NicheSlug[]) => void;
   toggleUpvote: (id: string) => void;
@@ -84,6 +87,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         upvoted: data.upvoted,
         myApps: data.myApps,
         notifications: data.notifications,
+        // The database remembers your profile; keep the local one if the server has none yet.
+        profile: data.profile?.complete ? data.profile : s.profile,
       }));
       setMode("shared");
       return true;
@@ -144,6 +149,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     mode,
     toast,
     showToast,
+    saveProfile: (p) => {
+      const profile: Profile = { ...p, name: p.name.trim(), complete: true };
+      setState((s) => ({ ...s, profile }));
+      send({ type: "saveProfile", profile });
+    },
     setNiches: (niches) => { setState((s) => ({ ...s, niches })); send({ type: "setNiches", niches }); },
     finishOnboarding: (niches) => { setState((s) => ({ ...s, niches, onboarded: true })); send({ type: "setNiches", niches }); },
     toggleUpvote: (id) => {
@@ -169,7 +179,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ...s,
         upvoted: [...s.upvoted, id],
         requests: [
-          { ...r, id, upvotes: 1, status: "open", builders: 0, author: "Priya", createdAt: Date.now(), mine: true },
+          { ...r, id, upvotes: 1, status: "open", builders: 0, author: s.profile.name || "You", createdAt: Date.now(), mine: true },
           ...s.requests,
         ],
       }));

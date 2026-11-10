@@ -6,7 +6,7 @@ import path from "node:path";
 import { Pool } from "pg";
 import {
   APPS, FREE_USES, NOTIFICATION_STYLE, NOTIFICATIONS, REQUESTS,
-  type App, type AppRequest, type MyApp, type NicheSlug, type Notification, type NotificationType,
+  type App, type AppRequest, type MyApp, type NicheSlug, type Notification, type NotificationType, type Profile,
 } from "./data";
 
 const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -49,6 +49,9 @@ export function ensureSchema() {
           await client.query(readFileSync(path.join(dir, "schema.sql"), "utf8"));
           await client.query(readFileSync(path.join(dir, "seed.sql"), "utf8"));
           console.log("solvd: created tables and loaded sample data");
+        } else {
+          // Database already set up: add any columns from newer versions of schema.sql.
+          await client.query(readFileSync(path.join(process.cwd(), "db", "schema.sql"), "utf8"));
         }
       } finally {
         await client.query("select pg_advisory_unlock(424242)").catch(() => {});
@@ -90,14 +93,15 @@ export async function loadState(uid: string) {
     id: string; developer_id: string; name: string; tagline: string; description: string; icon_url: string;
     status: "beta" | "live"; pricing_type: App["pricingType"]; price_inr: number; security_score: number;
     licence: string; last_updated: Date; users_count: number; rating_avg: string; verified: boolean;
-    new_developer: boolean; keywords: string[]; niches: NicheSlug[] | null;
+    new_developer: boolean; keywords: string[]; niches: NicheSlug[] | null; developer_name: string | null;
   }>(`
-    select a.*, array_remove(array_agg(n.slug order by n.id), null) as niches
+    select a.*, du.name as developer_name, array_remove(array_agg(n.slug order by n.id), null) as niches
     from apps a
+    left join users du on du.id = a.developer_id
     left join app_niches an on an.app_id = a.id
     left join niches n on n.id = an.niche_id
     where a.status <> 'removed'
-    group by a.id
+    group by a.id, du.name
     order by a.users_count desc`);
 
   const reviewRows = await q<{ app_id: string; name: string; rating: number; text: string; created_at: Date }>(
@@ -111,7 +115,9 @@ export async function loadState(uid: string) {
     tint: seedApp(r.id)?.tint ?? tints[i % tints.length],
     tagline: r.tagline ?? "",
     description: r.description ?? "",
-    developer: r.developer_id,
+    // Seed developers have handles like "rahul-dev"; real users show their profile name.
+    developer: r.developer_id?.startsWith("u_") ? r.developer_name ?? "a student developer" : r.developer_id,
+    mine: r.developer_id === uid,
     niches: r.niches ?? [],
     pricingType: r.pricing_type,
     priceInr: r.price_inr,
@@ -187,12 +193,26 @@ export async function loadState(uid: string) {
     `select n.slug from user_niches un join niches n on n.id = un.niche_id where un.user_id = $1 order by n.id`, [uid],
   );
 
-  return { apps, requests, upvoted, myApps, notifications, niches: nicheRows.map((n) => n.slug) };
+  const u = (await q<{ name: string; college: string | null; year: string | null; role: Profile["role"]; skills: string[]; github: string | null; profile_complete: boolean }>(
+    `select name, college, year, role, skills, github, profile_complete from users where id = $1`, [uid],
+  ))[0];
+  const profile: Profile = {
+    name: u?.profile_complete ? u.name : "",
+    college: u?.college ?? "BITS Pilani Hyderabad",
+    year: u?.year ?? "",
+    role: u?.role ?? "user",
+    skills: u?.skills ?? [],
+    github: u?.github ?? "",
+    complete: Boolean(u?.profile_complete),
+  };
+
+  return { apps, requests, upvoted, myApps, notifications, niches: nicheRows.map((n) => n.slug), profile };
 }
 
 // ---------- Actions (one per button in the app) ----------
 
 export type Action =
+  | { type: "saveProfile"; profile: Profile }
   | { type: "setNiches"; niches: NicheSlug[] }
   | { type: "toggleUpvote"; requestId: string }
   | { type: "postRequest"; id: string; title: string; description: string; niches: NicheSlug[]; bountyInr: number }
@@ -207,6 +227,19 @@ export type Action =
 export async function runAction(uid: string, a: Action) {
   await ensureUser(uid);
   switch (a.type) {
+    case "saveProfile": {
+      const p = a.profile;
+      const clean = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
+      const name = clean(p.name, 60);
+      if (!name) throw new Error("name required");
+      await q(
+        `update users set name = $2, college = $3, year = $4, role = $5, skills = $6, github = $7, profile_complete = true where id = $1`,
+        [uid, name, clean(p.college, 80), clean(p.year, 20), p.role === "developer" ? "developer" : "user",
+          (Array.isArray(p.skills) ? p.skills : []).map((x) => clean(x, 30)).slice(0, 12), clean(p.github, 39).replace(/^@/, "")],
+      );
+      return;
+    }
+
     case "setNiches":
       await q(`delete from user_niches where user_id = $1`, [uid]);
       await q(

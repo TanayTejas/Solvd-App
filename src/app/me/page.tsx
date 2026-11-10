@@ -2,37 +2,41 @@
 // Screen 9 · Me / profile
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CURRENT_USER, nicheBySlug } from "@/lib/data";
+import { nicheBySlug } from "@/lib/data";
 import { priceLabel } from "@/lib/match";
 import { useStore } from "@/lib/store";
 import { AppIcon, Avatar, Pill, TabBar } from "@/components/ui";
 
 export default function Me() {
-  const { niches, myApps, apps, requests, reset, showToast } = useStore();
+  const { niches, myApps, apps, requests, reset, showToast, profile } = useStore();
   const router = useRouter();
   const mine = myApps.map((m) => ({ m, app: apps.find((a) => a.slug === m.slug)! })).filter((x) => x.app);
   const monthly = mine.filter((x) => x.m.state === "kept" && x.app.pricingType === "monthly").reduce((s, x) => s + x.app.priceInr, 0)
     + mine.filter((x) => x.m.state === "kept" && x.app.pricingType === "per_use").reduce((s, x) => s + x.app.priceInr * 3, 0);
-  const myRequests = requests.filter((r) => r.mine ?? r.author === CURRENT_USER.name);
+  const myRequests = requests.filter((r) => r.mine ?? r.author === profile.name);
 
   const rows: [string, string, () => void][] = [
     ["🔔", "Notifications", () => router.push("/notifications")],
     ["🔒", "Privacy & permissions", () => showToast("Apps only see what you allow. (demo)")],
-    ["🛠️", "Switch to developer mode", () => router.push("/dev")],
+    ["🛠️", profile.role === "developer" ? "Developer hub" : "Switch to developer mode", () => router.push("/dev")],
     ["❓", "Help", () => showToast("Help centre coming soon")],
-    ["↺", "Reset demo data", () => { reset(); showToast("Demo reset to the sample data"); router.push("/onboarding"); }],
+    ["↺", "Start over as a new user", () => { reset(); showToast("Signed out · starting fresh"); router.push("/welcome"); }],
   ];
 
   return (
     <main>
       <section className="flex flex-col items-center bg-violet-tint px-5 pb-6 pt-8">
-        <Avatar name={CURRENT_USER.name} className="h-20 w-20 text-3xl ring-4 ring-white" />
-        <h1 className="mt-3 text-2xl font-bold">{CURRENT_USER.name}</h1>
-        <p className="text-sm text-muted">{CURRENT_USER.college}</p>
+        <Avatar name={profile.name || "?"} className="h-20 w-20 text-3xl ring-4 ring-white" />
+        <h1 className="mt-3 text-2xl font-bold">{profile.name || "You"}</h1>
+        <p className="text-sm text-muted">{[profile.college, profile.year].filter(Boolean).join(" · ")}</p>
+        {profile.role === "developer" && <Pill className="mt-2 bg-yellow">🛠️ Developer{profile.github ? ` · @${profile.github}` : ""}</Pill>}
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {niches.map((n) => <Pill key={n} className="bg-white">{nicheBySlug(n)?.icon} {nicheBySlug(n)?.label}</Pill>)}
         </div>
-        <Link href="/onboarding?edit=1" className="mt-2 text-sm font-semibold text-violet">Edit niches</Link>
+        <div className="mt-2 flex gap-4 text-sm font-semibold text-violet">
+          <Link href="/welcome?edit=1">Edit profile</Link>
+          <Link href="/onboarding?edit=1">Edit niches</Link>
+        </div>
       </section>
 
       <section className="px-5 pt-5">
