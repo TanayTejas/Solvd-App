@@ -6,7 +6,7 @@ import { useState } from "react";
 import { nicheBySlug, TRENDING_SLUGS, type App } from "@/lib/data";
 import { matchPercent } from "@/lib/match";
 import { useStore } from "@/lib/store";
-import { AppCard, Avatar, BellButton, Logo, TabBar } from "@/components/ui";
+import { AppCard, Avatar, BellButton, Logo, ModeToggle, TabBar } from "@/components/ui";
 
 function Row({ title, apps, subtitle }: { title: string; subtitle?: string; apps: App[] }) {
   if (!apps.length) return null;
@@ -49,6 +49,7 @@ export default function Feed() {
         <BellButton />
         <Link href="/me" aria-label="Me"><Avatar name={profile.name || "?"} /></Link>
       </header>
+      <ModeToggle mode="find" className="mx-5 mb-3" />
 
       <form
         className="px-5 pt-1"

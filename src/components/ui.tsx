@@ -145,6 +145,31 @@ export function GoogleButton({ onClick, label = "Continue with Google" }: { onCl
   );
 }
 
+/** Switch between finding apps (the feed) and building them (the developer hub). */
+export function ModeToggle({ mode, className = "" }: { mode: "find" | "build"; className?: string }) {
+  const router = useRouter();
+  const go = (m: "find" | "build") => { if (m !== mode) router.replace(m === "find" ? "/feed" : "/dev"); };
+  return (
+    <div role="tablist" aria-label="Mode" className={`relative grid grid-cols-2 rounded-full bg-canvas p-1 text-sm font-semibold ${className}`}>
+      <span
+        aria-hidden
+        className={`absolute inset-y-1 w-[calc(50%-4px)] rounded-full shadow-soft transition-all duration-300 ${mode === "find" ? "left-1 bg-violet" : "left-1/2 bg-ink"}`}
+      />
+      {(["find", "build"] as const).map((m) => (
+        <button
+          key={m}
+          role="tab"
+          aria-selected={mode === m}
+          onClick={() => go(m)}
+          className={`relative z-10 rounded-full py-2 transition-colors ${mode === m ? (m === "find" ? "text-white" : "text-yellow") : "text-muted"}`}
+        >
+          {m === "find" ? "🔍 Find apps" : "🛠️ Build apps"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Button({ children, variant = "violet", className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "violet" | "green" | "yellow" | "outline" | "ghost" }) {
   const v = {
     violet: "bg-violet text-white hover:bg-violet-dark shadow-soft",

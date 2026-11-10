@@ -4,15 +4,12 @@ import Link from "next/link";
 import { DEVELOPER, nicheBySlug } from "@/lib/data";
 import { compactNumber } from "@/lib/match";
 import { useStore } from "@/lib/store";
-import { goBack } from "@/lib/nav";
-import { useRouter } from "next/navigation";
 import { GuestWall } from "@/components/AccountPrompt";
-import { Avatar, Logo, VerifiedBadge } from "@/components/ui";
+import { Avatar, Logo, VerifiedBadge, ModeToggle, TabBar } from "@/components/ui";
 
 
 export default function DevHub() {
   const { requests, feedback, apps, profile, ready } = useStore();
-  const router = useRouter();
   const skills = profile.skills.length ? profile.skills : DEVELOPER.skills;
   // Requests that match this developer's skills: open or being built, most votes first.
   const matching = requests.filter((r) => r.status !== "live").sort((a, b) => b.upvotes - a.upvotes).slice(0, 3);
@@ -26,9 +23,11 @@ export default function DevHub() {
 
   if (ready && !profile.complete) {
     return (
-      <main className="px-5 pb-10 pt-6">
+      <main className="px-5 pb-10 pt-4">
+        <ModeToggle mode="build" className="mb-4" />
         <h1 className="mb-4 font-display text-xl font-bold">Developer hub</h1>
         <GuestWall reason="build and publish apps" />
+        <TabBar />
       </main>
     );
   }
@@ -36,8 +35,8 @@ export default function DevHub() {
   return (
     <main className="pb-10">
       <header className="bg-yellow px-5 pb-5 pt-4">
+        <ModeToggle mode="build" className="mb-3 bg-white/70" />
         <div className="flex items-center">
-          <button onClick={() => goBack(router, "/me")} className="-ml-2 mr-1 grid h-10 w-10 place-items-center rounded-full text-2xl hover:bg-black/5" aria-label="Back">‹</button>
           <h1 className="flex-1 font-display text-xl font-bold">Developer hub</h1>
           <Avatar name={profile.name || "?"} className="h-9 w-9 bg-white text-sm" />
         </div>
@@ -98,6 +97,7 @@ export default function DevHub() {
         <Link href="/dev/publish" className="block rounded-2xl bg-yellow py-4 text-center font-display text-lg font-bold shadow-soft">+ Publish from GitHub</Link>
       </div>
       <p className="mt-4 text-center text-xs text-muted">Built on <Logo className="text-xs" /> · no ad spend, ranked on merit</p>
+      <TabBar />
     </main>
   );
 }
