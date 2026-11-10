@@ -1,26 +1,37 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* solvd. design system (01_PROJECT_CONTEXT.md, section 8.2) */
+@theme {
+  --color-violet: #7C5CFF;
+  --color-violet-dark: #5B3DF0;
+  --color-violet-tint: #EFEAFF;
+  --color-yellow: #FFD84D;
+  --color-yellow-tint: #FFF6D6;
+  --color-green: #22A55B;
+  --color-green-tint: #E3F6EA;
+  --color-red: #E5484D;
+  --color-red-tint: #FDE8E8;
+  --color-pink: #FFD6E5;
+  --color-sky: #D6ECFF;
+  --color-mint: #D8F5E1;
+  --color-peach: #FFE6CC;
+  --color-ink: #1C1A2E;
+  --color-muted: #6E6A85;
+  --color-line: #ECEAF4;
+  --color-canvas: #F6F4FB;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-poppins), var(--font-inter), system-ui, sans-serif;
+  --shadow-soft: 0 6px 20px -8px rgba(60, 40, 140, 0.18);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+html, body { background: var(--color-canvas); color: var(--color-ink); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, .font-display { font-family: var(--font-display); }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@keyframes slide-up { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+.animate-slide-up { animation: slide-up .25s ease-out; }
+@keyframes pop { 0% { transform: scale(.9); opacity: 0 } 100% { transform: none; opacity: 1 } }
+.animate-pop { animation: pop .2s ease-out; }

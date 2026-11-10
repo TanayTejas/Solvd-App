@@ -1,0 +1,83 @@
+"use client";
+// Screen 9 · Me / profile
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { CURRENT_USER, nicheBySlug } from "@/lib/data";
+import { priceLabel } from "@/lib/match";
+import { useStore } from "@/lib/store";
+import { AppIcon, Avatar, Pill, TabBar } from "@/components/ui";
+
+export default function Me() {
+  const { niches, myApps, apps, requests, reset, showToast } = useStore();
+  const router = useRouter();
+  const mine = myApps.map((m) => ({ m, app: apps.find((a) => a.slug === m.slug)! })).filter((x) => x.app);
+  const monthly = mine.filter((x) => x.m.state === "kept" && x.app.pricingType === "monthly").reduce((s, x) => s + x.app.priceInr, 0)
+    + mine.filter((x) => x.m.state === "kept" && x.app.pricingType === "per_use").reduce((s, x) => s + x.app.priceInr * 3, 0);
+  const myRequests = requests.filter((r) => r.author === CURRENT_USER.name);
+
+  const rows: [string, string, () => void][] = [
+    ["🔔", "Notifications", () => router.push("/notifications")],
+    ["🔒", "Privacy & permissions", () => showToast("Apps only see what you allow. (demo)")],
+    ["🛠️", "Switch to developer mode", () => router.push("/dev")],
+    ["❓", "Help", () => showToast("Help centre coming soon")],
+    ["↺", "Reset demo data", () => { reset(); showToast("Demo reset to the sample data"); router.push("/onboarding"); }],
+  ];
+
+  return (
+    <main>
+      <section className="flex flex-col items-center bg-violet-tint px-5 pb-6 pt-8">
+        <Avatar name={CURRENT_USER.name} className="h-20 w-20 text-3xl ring-4 ring-white" />
+        <h1 className="mt-3 text-2xl font-bold">{CURRENT_USER.name}</h1>
+        <p className="text-sm text-muted">{CURRENT_USER.college}</p>
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          {niches.map((n) => <Pill key={n} className="bg-white">{nicheBySlug(n)?.icon} {nicheBySlug(n)?.label}</Pill>)}
+        </div>
+        <Link href="/onboarding?edit=1" className="mt-2 text-sm font-semibold text-violet">Edit niches</Link>
+      </section>
+
+      <section className="px-5 pt-5">
+        <h2 className="font-display font-semibold">My apps</h2>
+        <ul className="mt-2 divide-y divide-line">
+          {mine.map(({ m, app }) => (
+            <li key={app.slug}>
+              <Link href={`/app/${app.slug}`} className="flex items-center gap-3 py-3">
+                <AppIcon app={app} size="sm" />
+                <span className="flex-1 font-semibold">{app.name}</span>
+                {m.state === "kept"
+                  ? <Pill className="bg-green-tint text-green">Kept · {priceLabel(app)}</Pill>
+                  : <Pill className="bg-yellow-tint">Trial · {m.usesLeft} use{m.usesLeft === 1 ? "" : "s"} left</Pill>}
+              </Link>
+            </li>
+          ))}
+          {!mine.length && <li className="py-4 text-sm text-muted">No apps yet. Try one from your feed.</li>}
+        </ul>
+      </section>
+
+      <section className="mx-5 mt-3 rounded-[20px] bg-yellow-tint p-4 ring-1 ring-yellow">
+        <p className="font-display font-semibold">This month: ₹{monthly} across {mine.filter((x) => x.m.state === "kept").length} apps</p>
+        <p className="text-sm text-ink/70">One bill, cancel anytime.</p>
+      </section>
+
+      <section className="px-5 pt-6">
+        <h2 className="font-display font-semibold">My requests</h2>
+        <ul className="mt-2 space-y-2">
+          {myRequests.map((r) => (
+            <li key={r.id} className="flex items-center justify-between rounded-2xl bg-canvas px-4 py-3 text-sm">
+              <span className="font-medium">{r.title}</span>
+              <span className="shrink-0 pl-2 text-muted">▲{r.upvotes} · <span className={r.status === "live" ? "text-green" : r.status === "building" ? "text-violet" : ""}>{r.status === "building" ? "Building" : r.status === "live" ? "Live" : "Open"}</span></span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mt-6 border-t border-line">
+        {rows.map(([icon, label, fn]) => (
+          <button key={label} onClick={fn} className="flex w-full items-center gap-3 border-b border-line px-5 py-4 text-left hover:bg-canvas">
+            <span className="w-6 text-center">{icon}</span><span className="flex-1 font-medium">{label}</span><span className="text-muted">›</span>
+          </button>
+        ))}
+      </section>
+      <TabBar />
+    </main>
+  );
+}
