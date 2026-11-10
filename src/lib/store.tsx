@@ -29,7 +29,7 @@ type State = {
 const INITIAL: State = {
   profile: EMPTY_PROFILE,
   onboarded: false,
-  niches: ["student", "hosteller"],
+  niches: [], // chosen on the niche screen (or left empty with Skip)
   apps: APPS,
   requests: REQUESTS,
   upvoted: ["r-attendance"],

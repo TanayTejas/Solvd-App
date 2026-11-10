@@ -67,14 +67,15 @@ export function searchApps(apps: App[], query: string): App[] {
 /** The "92% match" number: niche overlap + quality signals (merit, not ads). */
 export function matchPercent(app: App, niches: NicheSlug[], query?: string): number {
   const overlap = app.niches.filter((n) => niches.includes(n)).length;
-  let score = 48 + overlap * 20 + (app.rating - 4) * 8 + (app.verified ? 0 : -8);
+  // No niches picked (Skip): rank on quality alone.
+  let score = (niches.length ? 48 + overlap * 20 : 72) + (app.rating - 4) * 8 + (app.verified ? 0 : -8);
   if (query) score += problemScore(app, query) * 20;
   return Math.max(35, Math.min(98, Math.round(score)));
 }
 
 export function matchReason(app: App, niches: NicheSlug[]): string {
   const shared = app.niches.filter((n) => niches.includes(n));
-  if (!shared.length) return "Popular with students at BPHC";
+  if (!shared.length) return "Popular on solvd.";
   return `Because you're a ${shared.map((s) => s.replace("_", " ")).join(" & ")}`;
 }
 

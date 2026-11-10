@@ -14,6 +14,13 @@ function Onboarding() {
   useEffect(() => { if (store.ready) setPicked(store.niches); }, [store.ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = (s: NicheSlug) => setPicked((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]));
+  // Skip: no niches, so the feed shows what's popular for everyone.
+  const skip = () => {
+    store.finishOnboarding([]);
+    store.showToast("Skipped · pick niches anytime in Me");
+    router.push("/feed");
+  };
+
   const done = () => {
     store.finishOnboarding(picked);
     if (editing) store.showToast("Niches updated · your feed is re-tuned");
@@ -22,9 +29,16 @@ function Onboarding() {
 
   return (
     <main className="flex min-h-dvh flex-col px-5 pb-8 pt-6">
-      <Logo className="text-3xl" />
+      <div className="flex items-center justify-between">
+        <Logo className="text-3xl" />
+        {!editing && (
+          <button onClick={skip} className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-muted hover:border-violet hover:text-violet">
+            Skip
+          </button>
+        )}
+      </div>
       <h1 className="mt-8 text-[28px] font-bold leading-tight">What describes you?</h1>
-      <p className="mt-1 text-muted">Pick 2 or more — we&apos;ll tailor your feed.</p>
+      <p className="mt-1 text-muted">Pick any that fit — we&apos;ll tailor your feed. Or skip and see what&apos;s popular.</p>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
         {NICHES.map((n) => {
@@ -51,11 +65,11 @@ function Onboarding() {
           {editing ? "Save niches" : "Continue →"}
         </Button>
         {!editing && (
-          <button onClick={() => { store.finishOnboarding(store.niches); router.push("/feed"); }} className="mt-3 w-full text-center text-sm text-muted">
-            Skip for now · change anytime in Me
+          <button onClick={skip} className="mt-3 w-full rounded-2xl border-2 border-line py-3 font-display font-semibold text-muted hover:border-violet hover:text-violet">
+            Skip for now
           </button>
         )}
-        {picked.length === 1 && <p className="mt-2 text-center text-xs text-muted">Tip: pick one more for a better feed</p>}
+        {!editing && <p className="mt-2 text-center text-xs text-muted">You can change this anytime in Me.</p>}
       </div>
     </main>
   );

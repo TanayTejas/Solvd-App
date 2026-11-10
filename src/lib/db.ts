@@ -75,7 +75,6 @@ export async function ensureUser(uid: string) {
     [uid, `Guest ${uid.slice(-4)}`],
   );
   if (created.length) {
-    await q(`insert into user_niches (user_id, niche_id) values ($1, 1), ($1, 2) on conflict do nothing`, [uid]);
     for (const n of [...NOTIFICATIONS].reverse()) {
       await q(
         `insert into notifications (user_id, type, title, body, link, read, created_at) values ($1, $2, $3, $4, $5, $6, now() - $7 * interval '1 millisecond')`,
@@ -193,13 +192,11 @@ export async function loadState(uid: string) {
     `select n.slug from user_niches un join niches n on n.id = un.niche_id where un.user_id = $1 order by n.id`, [uid],
   );
 
-  const u = (await q<{ name: string; college: string | null; year: string | null; role: Profile["role"]; skills: string[]; github: string | null; profile_complete: boolean }>(
-    `select name, college, year, role, skills, github, profile_complete from users where id = $1`, [uid],
+  const u = (await q<{ name: string; role: Profile["role"]; skills: string[]; github: string | null; profile_complete: boolean }>(
+    `select name, role, skills, github, profile_complete from users where id = $1`, [uid],
   ))[0];
   const profile: Profile = {
     name: u?.profile_complete ? u.name : "",
-    college: u?.college ?? "BITS Pilani Hyderabad",
-    year: u?.year ?? "",
     role: u?.role ?? "user",
     skills: u?.skills ?? [],
     github: u?.github ?? "",
@@ -233,8 +230,8 @@ export async function runAction(uid: string, a: Action) {
       const name = clean(p.name, 60);
       if (!name) throw new Error("name required");
       await q(
-        `update users set name = $2, college = $3, year = $4, role = $5, skills = $6, github = $7, profile_complete = true where id = $1`,
-        [uid, name, clean(p.college, 80), clean(p.year, 20), p.role === "developer" ? "developer" : "user",
+        `update users set name = $2, role = $3, skills = $4, github = $5, profile_complete = true where id = $1`,
+        [uid, name, p.role === "developer" ? "developer" : "user",
           (Array.isArray(p.skills) ? p.skills : []).map((x) => clean(x, 30)).slice(0, 12), clean(p.github, 39).replace(/^@/, "")],
       );
       return;

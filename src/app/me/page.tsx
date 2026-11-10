@@ -28,10 +28,10 @@ export default function Me() {
       <section className="flex flex-col items-center bg-violet-tint px-5 pb-6 pt-8">
         <Avatar name={profile.name || "?"} className="h-20 w-20 text-3xl ring-4 ring-white" />
         <h1 className="mt-3 text-2xl font-bold">{profile.name || "You"}</h1>
-        <p className="text-sm text-muted">{[profile.college, profile.year].filter(Boolean).join(" · ")}</p>
         {profile.role === "developer" && <Pill className="mt-2 bg-yellow">🛠️ Developer{profile.github ? ` · @${profile.github}` : ""}</Pill>}
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {niches.map((n) => <Pill key={n} className="bg-white">{nicheBySlug(n)?.icon} {nicheBySlug(n)?.label}</Pill>)}
+          {!niches.length && <Pill className="bg-white text-muted">No niches picked yet</Pill>}
         </div>
         <div className="mt-2 flex gap-4 text-sm font-semibold text-violet">
           <Link href="/welcome?edit=1">Edit profile</Link>

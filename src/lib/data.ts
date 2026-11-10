@@ -297,8 +297,6 @@ export const FREE_USES = 3;
 
 export type Profile = {
   name: string;
-  college: string;
-  year: string; // "1st year" … "Graduate" / "Not a student"
   role: "user" | "developer";
   skills: string[];
   github: string;
@@ -306,17 +304,16 @@ export type Profile = {
 };
 
 export const EMPTY_PROFILE: Profile = {
-  name: "", college: "BITS Pilani Hyderabad", year: "", role: "user", skills: [], github: "", complete: false,
+  name: "", role: "user", skills: [], github: "", complete: false,
 };
 
-export const YEARS = ["1st year", "2nd year", "3rd year", "4th year", "5th year", "Postgrad", "Not a student"];
 export const SKILLS = ["React", "Next.js", "Python", "Node.js", "Flutter", "Java", "ML / AI", "UI design"];
 
 /** Public handle used for a developer's apps, e.g. "tejas-dev" */
 export const handleFor = (p: Pick<Profile, "name" | "github">) =>
   p.github.trim() || `${p.name.trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9]/g, "") || "you"}-dev`;
 
-export const CURRENT_USER = { name: "Priya", handle: "priya", college: "BITS Pilani Hyderabad" };
+export const CURRENT_USER = { name: "Priya", handle: "priya" };
 export const DEVELOPER = { name: "Rahul", handle: "rahul-dev", skills: ["React", "Python"] };
 
 export const TRENDING_SLUGS = ["attendcalc", "duesoon", "gpa-plotter", "billsplit"];

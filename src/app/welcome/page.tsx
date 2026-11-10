@@ -2,7 +2,7 @@
 // Screen 0 · Create your profile (first visit only; also used for "Edit profile")
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { EMPTY_PROFILE, SKILLS, YEARS, type Profile } from "@/lib/data";
+import { EMPTY_PROFILE, SKILLS, type Profile } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { Avatar, Button, Chip, Logo } from "@/components/ui";
 
@@ -18,12 +18,11 @@ function Welcome() {
 
   const set = <K extends keyof Profile>(k: K, v: Profile[K]) => setP((x) => ({ ...x, [k]: v }));
   const nameOk = p.name.trim().length >= 2;
-  const yearOk = Boolean(p.year);
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
-    if (!nameOk || !yearOk) return;
+    if (!nameOk) return;
     store.saveProfile({ ...p, skills: p.role === "developer" ? p.skills : [], github: p.role === "developer" ? p.github : "" });
     if (editing) {
       store.showToast("Profile saved");
@@ -41,7 +40,7 @@ function Welcome() {
         {editing && <button onClick={() => router.back()} className="text-sm font-semibold text-muted">Cancel</button>}
       </div>
       <h1 className="mt-7 text-[28px] font-bold leading-tight">{editing ? "Edit your profile" : "Create your profile"}</h1>
-      <p className="mt-1 text-muted">{editing ? "Changes are saved to your account." : "Takes 20 seconds. This is how you'll appear on requests and reviews."}</p>
+      <p className="mt-1 text-muted">{editing ? "Changes are saved to your account." : "Takes 10 seconds. This is how you'll appear on requests and reviews."}</p>
 
       <form onSubmit={save} className="mt-6 space-y-6">
         <div className="flex items-center gap-4">
@@ -59,19 +58,6 @@ function Welcome() {
           </label>
         </div>
         {touched && !nameOk && <p className="-mt-4 text-xs text-red">Please enter your name.</p>}
-
-        <label className="block">
-          <span className="text-sm font-semibold">College</span>
-          <input value={p.college} onChange={(e) => set("college", e.target.value)} maxLength={80} placeholder="Your college" className="mt-1.5 w-full rounded-2xl border border-line px-4 py-3 outline-none focus:border-violet" />
-        </label>
-
-        <div>
-          <span className="text-sm font-semibold">Year *</span>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {YEARS.map((y) => <Chip key={y} active={p.year === y} onClick={() => set("year", y)}>{y}</Chip>)}
-          </div>
-          {touched && !yearOk && <p className="mt-1 text-xs text-red">Pick one.</p>}
-        </div>
 
         <div>
           <span className="text-sm font-semibold">What brings you here?</span>

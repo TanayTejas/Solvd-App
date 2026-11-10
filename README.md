@@ -40,7 +40,7 @@ Open http://localhost:3000. For the phone view in Chrome, press **F12**, then th
 The **Niches** tab (`/niches`) lets you browse apps by niche.
 
 ### Demo script (about 2 minutes, good for a presentation)
-1. Fill in **Create your profile** (name and year), then pick **Student + Hosteller** and press Continue. The feed fills with rows for your niches.
+1. Fill in **Create your profile** (just your name), then pick **Student + Hosteller** and press Continue. The feed fills with rows for your niches.
 2. Search **"split hostel mess bill"**. You get 3 apps with a match %.
 3. Open **MessMate** to show the 92% match and the trust panel. Then **Try free** on BillSplit and tap the friends to mark them paid.
 4. Press "Done trying?", then **Yes, keep it**. It shows up in **Me → My apps**.
@@ -59,7 +59,7 @@ The **Niches** tab (`/niches`) lets you browse apps by niche.
 | AI starter app | Template picked from keywords | LLM-generated app |
 | GitHub publish, security check, deploy | Simulated with timers | GitHub OAuth, real scan, Vercel API |
 | Payments in ₹ | Mock ("one bill") | Razorpay / UPI |
-| Profile | Asked on the first visit (name, college, year, finder or developer, skills, GitHub) and saved in the database. Each browser is its own account | Google sign-in so the profile follows you across devices |
+| Profile | Asked on the first visit (name, finder or developer, skills, GitHub) and saved in the database. Each browser is its own account | Google sign-in so the profile follows you across devices |
 
 ## 4. Put it online with Vercel (free)
 

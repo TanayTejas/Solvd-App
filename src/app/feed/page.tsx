@@ -61,7 +61,16 @@ export default function Feed() {
       </form>
 
       {nicheRows.map((r) => <Row key={r.slug} title={r.title} apps={r.apps} />)}
-      <Row title="Trending at BPHC 🔥" apps={trending} />
+      {!niches.length && (
+        <>
+          <Link href="/onboarding?edit=1" className="mx-5 mt-5 flex items-center justify-between rounded-[20px] bg-violet-tint px-4 py-3 text-sm">
+            <span>✨ <b>Make this feed yours.</b> Pick your niches</span>
+            <span className="font-semibold text-violet">→</span>
+          </Link>
+          <Row title="Popular on solvd." apps={[...apps].sort((a, b) => b.usersCount - a.usersCount).slice(0, 8)} />
+        </>
+      )}
+      <Row title="Trending now 🔥" apps={trending} />
       <Row title="★ Fresh from new developers" subtitle="Launch-Day Spotlight · ranked on merit, never ads" apps={fresh} />
 
       {nicheRequest && (
